@@ -1,7 +1,8 @@
 language: java
 env:
   global:
-    secure: "PGdtQezc+8RwCjVNcdcC9YeiKqqSBuUSDRAiSYKxNSJVk73rpzaa7cjYooydK5XAQDsZAlPOjmH2e5DU0yp0S8wYrrWqiqymFlxzyhvS8AZRNHKqJAI5VMqihnIu/SvoU1hOA8oAK5e7tDIvDuK0pHTfWUqeJIcpFOBNTp42a7prueCPFgHaKQm/qwCpHn77PQGp84OsaB6Zo4BqHAT4VYLy8Ld5CYvoBDA6o6UWXEz/0SnRQTgdZmEMk/Mx1LAdMTZijZX0DKn0mWRUMxrX1GTjwkqekIWOkZY5mZ34n+nm+VNiLj7CCoT5vVnImvJP3r2BhTE82R1i5ihW/yikwxSwtQbryjO6a2yJktTpi6JWkapRRS7QZAvLs9kgz3bSuuSCXgVKLNKU8AO7pemGhZ+VnFrUb2j61T8W4GwydVvEbweAU+ETASSx3DJpaoY97tQRp8rbKt+/ur/fRD15ao5TQsy/H3KvBn22oEZ4cjIDEnwKtH2Iupy5ouMqYXDGu5rd0AT2Nsl1/Qnqogm+iwI2vO2D1saMrbGJCA6z5wP8do39XX69F1tx2pIMuA49jRWq83DMHOUpxD8tTss5HFcU5Y0rTCndqMpbrqMmRfHEHL0nDPqRFcQRhPu7hq40H0bUuHTFKMU2AM1ni6W9X30Eud0qwvO/b1MIP/gZRTo="
+  - GITHUB_REPO=symbiote-h2020/EnablerPlatformProxy
+  - secure: QTpMZAw/rq24i/8mb99iAI+7YhYP0G1TFlNwlbHNzzDD9N/0b4tCWd8pxEJ7jn3bPX6xoMwMUaxhtwA9Ph3k4h7k7k2q5d7vonTf6AU0NfBkCw5a1ODYMxZuBPu8wdJ0oFwCyoWtpzLxWBth3//vtFlcYENuoXBwz9nXi1f5mrv0Iae8Cp2dKk1WZ3946JNEK1LSGn54vLdgtY/TkKX194+fSR7SpnrXJ901Hd/+EM7LctKNFLFyOzlQD838aXGFARM5pgoC/2t9PUwbbtttk783IDs3nUd9jpdWTez23SXvJMhtbRx8ZCGnv1LtImssjNOlmLg/92pQg5F33oQd+MXXhDv38SKKx8fMpA0kJPJdWCzkKhZNz3/mFtMiWQHoPoQFHFv3opVfkwOLZpdOcJDPKgQdLchtFeaFWIkduLUf0JvcvyxyhP2rvLw5fzThuj8UxSAhPaUq6gU9P7rLIwkf7/KhKm62fMtq3aChu6QWWXKprkZfIfdAH+fMeUX+iRYGpP9EpiG7zhJ5yQVIWtfbquZ5/xHaFfdhGzMXxRQzUV/ZeDp2b28E0S/oHEjnAUD+0hLxWnORgHgrZ5V58+Xoxp1hSPqPk7Lu/Jnk9MDlCuNPYBjwWxSkRasm3dPcvXBhLlt3X/oxBQpric4Oeb+undKPXR5BxZR24lK3ivs=
 jdk:
 - oraclejdk8
 services:
@@ -11,6 +12,7 @@ sudo: required
 branches:
   only:
   - staging
+install: true
 before_cache:
 - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
 - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
@@ -18,8 +20,14 @@ cache:
   directories:
   - "$HOME/.gradle/caches/"
   - "$HOME/.gradle/wrapper/"
-after_success:
+before_script:
 - chmod a+x merge_script.sh
-- BRANCHES_TO_MERGE_REGEX='staging' BRANCH_TO_MERGE_INTO=develop GITHUB_REPO=symbiote-h2020/EnablerPlatformProxy
-  ./merge_script.sh
+- "./merge_script.sh"
+after_success:
+- chmod a+x pushing_script.sh
+- "./pushing_script.sh"
 - bash <(curl -s https://codecov.io/bash)
+notifications:
+  email:
+    on_success: never
+    on_failure: always
