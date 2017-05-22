@@ -7,6 +7,9 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
+import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyAcquisitionStartRequest;
+import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyAcquisitionStartRequestResponse;
+import eu.h2020.symbiote.manager.AcquisitionManager;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -20,6 +23,7 @@ import java.io.IOException;
 public class AcquisitionStartRequestedConsumer extends DefaultConsumer {
 
     private static Log log = LogFactory.getLog(AcquisitionStartRequestedConsumer.class);
+    private final AcquisitionManager acquisitionManager;
 
     /**
      * Constructs a new instance and records its association to the passed-in channel.
@@ -27,8 +31,9 @@ public class AcquisitionStartRequestedConsumer extends DefaultConsumer {
      * @param channel the channel to which this consumer is attached
      *
      */
-    public AcquisitionStartRequestedConsumer(Channel channel) {
+    public AcquisitionStartRequestedConsumer(Channel channel, AcquisitionManager acquisitionManager) {
         super(channel);
+        this.acquisitionManager = acquisitionManager;
     }
 
     @Override
@@ -40,11 +45,15 @@ public class AcquisitionStartRequestedConsumer extends DefaultConsumer {
         try {
             ObjectMapper mapper = new ObjectMapper();
             //TODO read proper value and handle acq start request
-            String searchRequest = mapper.readValue(msg, String.class);
+            PlatformProxyAcquisitionStartRequest acquisitionStartRequest = mapper.readValue(msg, PlatformProxyAcquisitionStartRequest.class);
 
-            log.debug( "Sending response to the sender");
+            acquisitionManager.startAcquisition(acquisitionStartRequest);
 
-            byte[] responseBytes = mapper.writeValueAsBytes("Response");
+            PlatformProxyAcquisitionStartRequestResponse response = new PlatformProxyAcquisitionStartRequestResponse();
+            response.setStatus("OK");
+            response.setTaskId(acquisitionStartRequest.getTaskId());
+
+            byte[] responseBytes = mapper.writeValueAsBytes(response);
 
             AMQP.BasicProperties replyProps = new AMQP.BasicProperties
                     .Builder()

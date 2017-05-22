@@ -1,16 +1,19 @@
 package eu.h2020.symbiote.messaging.consumers;
 
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
+import eu.h2020.symbiote.manager.AcquisitionManager;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Consumer of the acquisition stop request.
@@ -20,6 +23,7 @@ import java.io.IOException;
 public class AcquisitionStopRequestedConsumer extends DefaultConsumer {
 
     private static Log log = LogFactory.getLog(AcquisitionStopRequestedConsumer.class);
+    private final AcquisitionManager acquisitionManager;
 
     /**
      * Constructs a new instance and records its association to the passed-in channel.
@@ -27,8 +31,9 @@ public class AcquisitionStopRequestedConsumer extends DefaultConsumer {
      * @param channel the channel to which this consumer is attached
      *
      */
-    public AcquisitionStopRequestedConsumer(Channel channel) {
+    public AcquisitionStopRequestedConsumer(Channel channel, AcquisitionManager acquisitionManager) {
         super(channel);
+        this.acquisitionManager = acquisitionManager;
     }
 
     @Override
@@ -40,7 +45,10 @@ public class AcquisitionStopRequestedConsumer extends DefaultConsumer {
         try {
             ObjectMapper mapper = new ObjectMapper();
             //TODO read proper value and handle acq start request
-            String searchRequest = mapper.readValue(msg, String.class);
+            List<String> stopRequest = mapper.readValue(msg, new TypeReference<List<String>>() {
+            });
+
+            acquisitionManager.stopAcquisition(stopRequest);
 
             log.debug( "Sending response to the sender");
 

@@ -14,7 +14,7 @@ import static org.mockito.Mockito.*;
 public class RabbitManagerTests {
     @Test
     public void testPlaceholder_success() {
-        RabbitManager rabbitManager = spy(new RabbitManager());
+//        RabbitManager rabbitManager = spy(new RabbitManager());
         // doReturn(null).when(rabbitManager).sendRpcMessage(any(), any(), any());
 
     }

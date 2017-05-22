@@ -1,6 +1,10 @@
 package eu.h2020.symbiote.messaging;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.*;
+import eu.h2020.symbiote.enabler.messaging.model.EnablerLogicDataAppearedMessage;
+import eu.h2020.symbiote.manager.AcquisitionManager;
 import eu.h2020.symbiote.messaging.consumers.AcquisitionStartRequestedConsumer;
 import eu.h2020.symbiote.messaging.consumers.AcquisitionStopRequestedConsumer;
 import org.apache.commons.logging.Log;
@@ -23,6 +27,7 @@ import java.util.concurrent.TimeoutException;
 public class RabbitManager {
 
     private static Log log = LogFactory.getLog(RabbitManager.class);
+    private final AcquisitionManager acquisitionManager;
 
     @Value("${rabbit.host}")
     private String rabbitHost;
@@ -30,6 +35,9 @@ public class RabbitManager {
     private String rabbitUsername;
     @Value("${rabbit.password}")
     private String rabbitPassword;
+
+    @Value("${rabbit.exchange.enablerLogic.name}")
+    private String enablerLogicExchangeName;
 
     @Value("${rabbit.exchange.enablerPlatformProxy.name}")
     private String enablerPlatformProxyExchangeName;
@@ -48,13 +56,14 @@ public class RabbitManager {
     @Value("${rabbit.routingKey.enablerPlatformProxy.acquisitionStopRequested}")
     private String acquisitionStopRequestedRoutingKey;
 
-    @Value("${rabbit.routingKey.enablerPlatformProxy.dataAppeared}")
+    @Value("${rabbit.routingKey.enablerLogic.dataAppeared}")
     private String dataAppearedRoutingKey;
 
     private Connection connection;
 
     @Autowired
-    public RabbitManager() {
+    public RabbitManager(AcquisitionManager acquisitionManager) {
+        this.acquisitionManager = acquisitionManager;
     }
 
     /**
@@ -161,6 +170,17 @@ public class RabbitManager {
         log.info("- Custom message sent");
     }
 
+    public void sendDataAppearedMessage(EnablerLogicDataAppearedMessage dataAppeared) {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            String msg = mapper.writeValueAsString(dataAppeared);
+            log.debug("Sending data appeared message for task " + dataAppeared.getTaskId());
+            sendMessage(enablerLogicExchangeName,dataAppearedRoutingKey,msg);
+        } catch (JsonProcessingException e) {
+            log.error("Error occurred when parsing JSON of data appeared object: " + e.getMessage(),e);
+        }
+    }
+
     /**
      * Register resource data acquisition start consumer
      */
@@ -169,7 +189,7 @@ public class RabbitManager {
         Channel channel = connection.createChannel();
         String queueName = channel.queueDeclare().getQueue();
         channel.queueBind(queueName, enablerPlatformProxyExchangeName, acquisitionStartRequestedRoutingKey);
-        AcquisitionStartRequestedConsumer consumer = new AcquisitionStartRequestedConsumer(channel);
+        AcquisitionStartRequestedConsumer consumer = new AcquisitionStartRequestedConsumer(channel,acquisitionManager);
 
         log.debug("Creating acq start consumer");
         channel.basicConsume(queueName, false, consumer);
@@ -183,7 +203,7 @@ public class RabbitManager {
         Channel channel = connection.createChannel();
         String queueName = channel.queueDeclare().getQueue();
         channel.queueBind(queueName, enablerPlatformProxyExchangeName, acquisitionStopRequestedRoutingKey);
-        AcquisitionStopRequestedConsumer consumer = new AcquisitionStopRequestedConsumer(channel);
+        AcquisitionStopRequestedConsumer consumer = new AcquisitionStopRequestedConsumer(channel,acquisitionManager);
 
         log.debug("Creating acq stop consumer");
         channel.basicConsume(queueName, false, consumer);

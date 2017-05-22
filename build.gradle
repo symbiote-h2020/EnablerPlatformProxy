@@ -1,43 +1,59 @@
 buildscript {
     ext {
-        springBootVersion = '1.4.1.RELEASE'
+        springBootVersion = '1.5.3.RELEASE'
     }
     repositories {
         mavenCentral()
     }
     dependencies {
         classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+        classpath group: 'com.cinnober.gradle', name: 'semver-git', version: '2.2.1'
+        classpath 'org.owasp:dependency-check-gradle:1.4.5.1'
     }
 }
 
-ext.junitJupiterVersion = '5.0.0-M2'
-
+// code
 apply plugin: 'java'
+apply plugin: 'org.springframework.boot'
+
+// code quality
+apply plugin: 'jacoco'
+apply plugin: 'org.owasp.dependencycheck'
+
+// IDEs
 apply plugin: 'eclipse'
 apply plugin: 'idea'
-apply plugin: 'spring-boot'
-apply plugin: 'jacoco'
 
+// publishing
+apply plugin: 'com.cinnober.gradle.semver-git'
 
-jar {
-    baseName = 'EnablerPlatformProxy'
-    version =  '0.0.1'
-}
+// XXX please change with your commits according to http://semver.org/
+project.version = '0.2.0'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 repositories {
     mavenCentral()
     maven { 
         url "https://jitpack.io" 
     }
-    maven {
-        url 'https://repo.spring.io/libs-snapshot'
+}
+
+// Spring related configs
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:Dalston.RELEASE"
     }
 }
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+configurations.all {
+    // check for updates every build
+    resolutionStrategy.cacheChangingModulesFor 0, 'seconds'
+}
 
 dependencies {
+    compile('org.springframework.cloud:spring-cloud-starter')
     compile('org.springframework.cloud:spring-cloud-starter-config')
     compile('org.springframework.cloud:spring-cloud-starter-eureka')
     compile('org.springframework.cloud:spring-cloud-starter-zipkin') // Causes the java.net.ConnectException if Zipkin offline
@@ -48,20 +64,21 @@ dependencies {
 
     testCompile('org.springframework.boot:spring-boot-starter-test')
 
+    compile('com.github.symbiote-h2020:SymbIoTeLibraries:develop-SNAPSHOT') { changing=true }
 
     // Use JUnit4
     testCompile 'junit:junit:4.12'
 }
 
-dependencyManagement {
-    imports {
-        mavenBom "org.springframework.cloud:spring-cloud-dependencies:Camden.RELEASE"
-        mavenBom 'org.springframework.cloud:spring-cloud-sleuth:1.1.0.BUILD-SNAPSHOT'
-    }
+// code quality below
+task generateJavaDocs(type: Javadoc) {
+    source = sourceSets.main.allJava
+    destinationDir = reporting.file("javadocs")
 }
 
+// jacoco configuration section
 jacoco {
-    toolVersion = "0.7.7.201606060606"
+    toolVersion = "0.7.9"
 }
 
 jacocoTestReport {
@@ -71,4 +88,15 @@ jacocoTestReport {
     }
 }
 
-check.dependsOn jacocoTestReport
+// owasp config
+dependencyCheck {
+    outputDirectory = "build/reports/security"
+}
+
+// including code quality extensions into the build
+check.dependsOn(jacocoTestReport, 'dependencyCheck')
+
+// Eureka needs to be disabled for testing
+tasks.withType(Test) {
+    systemProperty 'eureka.client.enabled', 'false'
+}
