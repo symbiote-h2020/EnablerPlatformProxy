@@ -2,12 +2,10 @@ package eu.h2020.symbiote.manager;
 
 import eu.h2020.symbiote.enabler.messaging.model.EnablerLogicDataAppearedMessage;
 import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyAcquisitionStartRequest;
-import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyAcquisitionStartRequestResponse;
 import eu.h2020.symbiote.messaging.RabbitManager;
 import eu.h2020.symbiote.model.AcquisitionStatus;
 import eu.h2020.symbiote.model.AcquisitionTask;
 import eu.h2020.symbiote.model.AcquisitionTaskDescription;
-import eu.h2020.symbiote.model.AcquisitionTaskFactory;
 import eu.h2020.symbiote.repository.AcquisitionTaskDescriptionRepository;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -17,7 +15,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Timer;
 
 /**
  * Manager of the acquisition tasks. Is responsible for starting (scheduling) and stopping (cancelling) of the acquisition tasks.
@@ -72,7 +73,11 @@ public class AcquisitionManager {
         if (existingOne != null) {
             //Do stuff to stop existing task...
             log.debug("Task with id " + startRequest.getTaskId() + " already exists. Stopping and deleting existing one...");
-            //TODO stop the timed task
+            Timer timer = tasks.get(existingOne.getTaskId());
+            if( timer != null ) {
+                timer.cancel();
+                tasks.remove(existingOne.getTaskId());
+            }
             acquisitionTaskDescriptionRepository.delete(startRequest.getTaskId());
         }
         acquisitionTaskDescriptionRepository.save(description);
@@ -102,6 +107,7 @@ public class AcquisitionManager {
                     Timer timer = tasks.get(taskId);
                     timer.cancel();
                 }
+                acquisitionTaskDescriptionRepository.delete(taskId);
             }
         }
     }

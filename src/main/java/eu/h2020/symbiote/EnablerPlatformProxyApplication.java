@@ -11,6 +11,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.sleuth.sampler.AlwaysSampler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 
 
 /**
@@ -25,6 +26,12 @@ public class EnablerPlatformProxyApplication {
     }
 
     private static Log log = LogFactory.getLog(EnablerPlatformProxyApplication.class);
+
+
+    @Bean
+    RestTemplate RestTemplate() {
+        return new RestTemplate();
+    }
 
     @Bean
     public AlwaysSampler defaultSampler() {
