@@ -7,6 +7,7 @@ import eu.h2020.symbiote.model.AcquisitionStatus;
 import eu.h2020.symbiote.model.AcquisitionTask;
 import eu.h2020.symbiote.model.AcquisitionTaskDescription;
 import eu.h2020.symbiote.repository.AcquisitionTaskDescriptionRepository;
+import eu.h2020.symbiote.security.TokenManager;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.joda.time.DateTime;
@@ -33,18 +34,19 @@ public class AcquisitionManager {
     private final AcquisitionTaskDescriptionRepository acquisitionTaskDescriptionRepository;
     private final RabbitManager rabbitManager;
     private final RestTemplate restTemplate;
+    private final TokenManager tokenManager;
 
 //    private Map<String, AcquisitionTask> tasks = new HashMap<>();
     private Map<String, Timer> tasks = new HashMap<>();
 
     @Autowired
-    public AcquisitionManager(AcquisitionTaskDescriptionRepository acquisitionTaskDescriptionRepository, RabbitManager rabbitManager, RestTemplate restTemplate) {
+    public AcquisitionManager(AcquisitionTaskDescriptionRepository acquisitionTaskDescriptionRepository, RabbitManager rabbitManager, RestTemplate restTemplate, TokenManager tokenManager) {
         this.acquisitionTaskDescriptionRepository = acquisitionTaskDescriptionRepository;
         this.rabbitManager = rabbitManager;
         this.restTemplate = restTemplate;
+        this.tokenManager = tokenManager;
     }
 
-    @PostConstruct
     public void init() {
         log.info("Initializing acquisition tasks from database...");
         List<AcquisitionTaskDescription> all = acquisitionTaskDescriptionRepository.findAll();
@@ -87,7 +89,7 @@ public class AcquisitionManager {
     }
 
     private void startAcquisitionTimerTask(AcquisitionTaskDescription description) {
-        AcquisitionTask task = new AcquisitionTask(description, restTemplate, this);
+        AcquisitionTask task = new AcquisitionTask(description, restTemplate, this, tokenManager);
         Timer taskTimer = new Timer("Acquisition task " + description.getTaskId(),true);
 
         long period = description.getInterval().longValue() * 1000l;

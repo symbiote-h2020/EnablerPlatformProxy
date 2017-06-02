@@ -2,6 +2,7 @@ package eu.h2020.symbiote;
 
 import eu.h2020.symbiote.manager.AcquisitionManager;
 import eu.h2020.symbiote.messaging.RabbitManager;
+import eu.h2020.symbiote.security.TokenManager;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -14,6 +15,8 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestTemplate;
+
+import static org.junit.Assert.*;
 
 /**
  * Created by Szymon Mueller on 23/05/2017.
@@ -31,6 +34,9 @@ public class SpringTest {
     @Autowired
     protected AcquisitionManager acquisitionManager;
 
+    @Autowired
+    protected TokenManager tokenManager;
+
 
 //    @Autowired
 //    protected InternalSecurityHandler securityHandler;
@@ -47,8 +53,14 @@ public class SpringTest {
 
     @Test
     public void springLoadTest() {
-
     }
+
+//    @Test
+//    public void obtainCoreToken() {
+//        String token = tokenManager.obtainCoreToken();
+//        assertNotNull(token);
+//        assertFalse(token.isEmpty());
+//    }
 
     @Configuration
     @ComponentScan(basePackages = {"eu.h2020.symbiote"})

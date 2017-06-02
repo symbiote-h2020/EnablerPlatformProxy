@@ -60,6 +60,10 @@ public class RabbitManager {
     @Value("${rabbit.routingKey.enablerLogic.dataAppeared}")
     private String dataAppearedRoutingKey;
 
+
+    private final String startAcquisitionQueueName = "symbIoTe-enabler-platormProxy-StartAcquisition";
+    private final String stopAcquisitionQueueName = "symbIoTe-enabler-platormProxy-SopAcquisition";
+
     private Connection connection;
 
     @Autowired
@@ -188,12 +192,12 @@ public class RabbitManager {
     private void registerAcquisitionStartRequestedConsumer() throws IOException {
 
         Channel channel = connection.createChannel();
-        String queueName = channel.queueDeclare().getQueue();
-        channel.queueBind(queueName, enablerPlatformProxyExchangeName, acquisitionStartRequestedRoutingKey);
+        channel.queueDeclare(startAcquisitionQueueName,false,true,true,null);
+        channel.queueBind(startAcquisitionQueueName, enablerPlatformProxyExchangeName, acquisitionStartRequestedRoutingKey);
         AcquisitionStartRequestedConsumer consumer = new AcquisitionStartRequestedConsumer(channel,acquisitionManager);
 
         log.debug("Creating acq start consumer");
-        channel.basicConsume(queueName, false, consumer);
+        channel.basicConsume(startAcquisitionQueueName, false, consumer);
     }
 
     /**
@@ -202,12 +206,12 @@ public class RabbitManager {
     private void registerAcquisitionStopRequestedConsumer() throws IOException {
 
         Channel channel = connection.createChannel();
-        String queueName = channel.queueDeclare().getQueue();
-        channel.queueBind(queueName, enablerPlatformProxyExchangeName, acquisitionStopRequestedRoutingKey);
+        channel.queueDeclare(stopAcquisitionQueueName, false,true,true,null);
+        channel.queueBind(stopAcquisitionQueueName, enablerPlatformProxyExchangeName, acquisitionStopRequestedRoutingKey);
         AcquisitionStopRequestedConsumer consumer = new AcquisitionStopRequestedConsumer(channel,acquisitionManager);
 
         log.debug("Creating acq stop consumer");
-        channel.basicConsume(queueName, false, consumer);
+        channel.basicConsume(stopAcquisitionQueueName, false, consumer);
     }
 
 
