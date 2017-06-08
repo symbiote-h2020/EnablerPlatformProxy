@@ -58,6 +58,7 @@ public class AcquisitionStartRequestedConsumer extends DefaultConsumer {
             AMQP.BasicProperties replyProps = new AMQP.BasicProperties
                     .Builder()
                     .correlationId(properties.getCorrelationId())
+                    .contentType("application/json")
                     .build();
             this.getChannel().basicPublish("", properties.getReplyTo(), replyProps, responseBytes);
             log.debug("-> Message sent back");
