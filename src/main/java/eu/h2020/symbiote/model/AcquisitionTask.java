@@ -55,7 +55,7 @@ public class AcquisitionTask extends TimerTask {
         int i = 0;
         for (PlatformProxyResourceInfo info : description.getResources()) {
             log.debug("[" + ++i + "] Trying " + info.getAccessURL() + " ...");
-            List<Observation> resObs = getObservationForResource(info);
+            List<Observation> resObs = manager.getObservationForResource(info);
             log.debug("[" + ++i + "] " + info.getAccessURL() + " got " + resObs.size() + " observations");
             observations.addAll(resObs);
         }
@@ -70,26 +70,6 @@ public class AcquisitionTask extends TimerTask {
             this.manager.dataAppeared(message);
         } else {
             log.info("Returned 0 observations: skipping informing enabler logic");
-        }
-
-    }
-
-    private List<Observation> getObservationForResource(PlatformProxyResourceInfo info) {
-        HttpHeaders httpHeaders = new HttpHeaders();
-//        httpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
-//        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-        String paamAddress = tokenManager.getPaamAddress(info.getAccessURL());
-        try {
-            Token platformToken = tokenManager.obtainValidPlatformToken(paamAddress);
-            httpHeaders.set("X-Auth-Token", platformToken.getToken());
-            HttpEntity<String> entity = new HttpEntity<>(httpHeaders);
-            ResponseEntity<Observation[]> queryResponse = restTemplate.exchange(
-                    info.getAccessURL()+"/Observations", HttpMethod.GET, entity, Observation[].class);
-
-            return Arrays.asList(queryResponse.getBody());
-        } catch (TokenValidationException e) {
-            log.error("Error obtaining token for platform " + e.getMessage(), e);
-            return Arrays.asList();
         }
 
     }

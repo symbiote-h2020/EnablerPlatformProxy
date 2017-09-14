@@ -1,25 +1,30 @@
 package eu.h2020.symbiote.manager;
 
+import eu.h2020.symbiote.cloud.model.data.observation.Observation;
 import eu.h2020.symbiote.enabler.messaging.model.EnablerLogicDataAppearedMessage;
 import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyAcquisitionStartRequest;
+import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyResourceInfo;
 import eu.h2020.symbiote.messaging.RabbitManager;
 import eu.h2020.symbiote.model.AcquisitionStatus;
 import eu.h2020.symbiote.model.AcquisitionTask;
 import eu.h2020.symbiote.model.AcquisitionTaskDescription;
 import eu.h2020.symbiote.repository.AcquisitionTaskDescriptionRepository;
 import eu.h2020.symbiote.security.TokenManager;
+import eu.h2020.symbiote.security.exceptions.aam.TokenValidationException;
+import eu.h2020.symbiote.security.token.Token;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.PostConstruct;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Timer;
+import java.util.*;
 
 /**
  * Manager of the acquisition tasks. Is responsible for starting (scheduling) and stopping (cancelling) of the acquisition tasks.
@@ -58,7 +63,7 @@ public class AcquisitionManager {
     public AcquisitionTaskDescription createDescriptionFromRequest(PlatformProxyAcquisitionStartRequest request) {
         AcquisitionTaskDescription description = new AcquisitionTaskDescription();
         description.setTaskId(request.getTaskId());
-        description.setInterval(request.getInterval());
+        description.setInterval(request.getQueryInterval_ms());
         description.setResources(request.getResources());
         description.setStartTime(DateTime.now());
         description.setStatus(AcquisitionStatus.STARTED);
@@ -92,7 +97,7 @@ public class AcquisitionManager {
         AcquisitionTask task = new AcquisitionTask(description, restTemplate, this, tokenManager);
         Timer taskTimer = new Timer("Acquisition task " + description.getTaskId(),true);
 
-        long period = description.getInterval().longValue() * 1000l;
+        long period = description.getInterval().longValue();
 
         log.debug("Starting acquisition timer task for task " + description.getTaskId() + " period: " + period );
         taskTimer.schedule(task,10000,period);
@@ -116,6 +121,26 @@ public class AcquisitionManager {
 
     public void dataAppeared(EnablerLogicDataAppearedMessage message) {
         rabbitManager.sendDataAppearedMessage(message);
+    }
+
+    public List<Observation> getObservationForResource(PlatformProxyResourceInfo info) {
+        HttpHeaders httpHeaders = new HttpHeaders();
+//        httpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+//        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+        String paamAddress = tokenManager.getPaamAddress(info.getAccessURL());
+        try {
+            Token platformToken = tokenManager.obtainValidPlatformToken(paamAddress);
+            httpHeaders.set("X-Auth-Token", platformToken.getToken());
+            HttpEntity<String> entity = new HttpEntity<>(httpHeaders);
+            ResponseEntity<Observation[]> queryResponse = restTemplate.exchange(
+                    info.getAccessURL()+"/Observations", HttpMethod.GET, entity, Observation[].class);
+
+            return Arrays.asList(queryResponse.getBody());
+        } catch (TokenValidationException e) {
+            log.error("Error obtaining token for platform " + e.getMessage(), e);
+            return Arrays.asList();
+        }
+
     }
 
 }

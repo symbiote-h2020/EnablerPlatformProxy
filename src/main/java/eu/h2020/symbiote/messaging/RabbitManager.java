@@ -7,6 +7,7 @@ import eu.h2020.symbiote.enabler.messaging.model.EnablerLogicDataAppearedMessage
 import eu.h2020.symbiote.manager.AcquisitionManager;
 import eu.h2020.symbiote.messaging.consumers.AcquisitionStartRequestedConsumer;
 import eu.h2020.symbiote.messaging.consumers.AcquisitionStopRequestedConsumer;
+import eu.h2020.symbiote.messaging.consumers.SingleReadingRequestedConsumer;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,12 +58,15 @@ public class RabbitManager {
     @Value("${rabbit.routingKey.enablerPlatformProxy.acquisitionStopRequested}")
     private String acquisitionStopRequestedRoutingKey;
 
+    @Value("${rabbit.routingKey.enablerPlatformProxy.singleReadRequested}")
+    private String singleReadingRequestedRoutingQueue;
+
     @Value("${rabbit.routingKey.enablerLogic.dataAppeared}")
     private String dataAppearedRoutingKey;
 
-
     private final String startAcquisitionQueueName = "symbIoTe-enabler-platormProxy-StartAcquisition";
     private final String stopAcquisitionQueueName = "symbIoTe-enabler-platormProxy-SopAcquisition";
+    private final String singleReadingQueueName = "symbIoTe-enabler-platormProxy-SingleReading";
 
     private Connection connection;
 
@@ -158,6 +162,7 @@ public class RabbitManager {
         try {
             registerAcquisitionStartRequestedConsumer();
             registerAcquisitionStopRequestedConsumer();
+            registerSingleReadingRequestedConsumer();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -213,6 +218,21 @@ public class RabbitManager {
         log.debug("Creating acq stop consumer");
         channel.basicConsume(stopAcquisitionQueueName, false, consumer);
     }
+
+    /**
+     * Register resource single data acquisition request
+     */
+    private void registerSingleReadingRequestedConsumer() throws IOException {
+
+        Channel channel = connection.createChannel();
+        channel.queueDeclare(singleReadingQueueName, false,true,true,null);
+        channel.queueBind(singleReadingQueueName, enablerPlatformProxyExchangeName, singleReadingRequestedRoutingQueue);
+        SingleReadingRequestedConsumer consumer = new SingleReadingRequestedConsumer(channel,acquisitionManager);
+
+        log.debug("Creating single data reading consumer");
+        channel.basicConsume(singleReadingQueueName, false, consumer);
+    }
+
 
 
 

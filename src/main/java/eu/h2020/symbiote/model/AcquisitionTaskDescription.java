@@ -20,7 +20,7 @@ public class AcquisitionTaskDescription {
 
     private List<PlatformProxyResourceInfo> resources;
 
-    private Integer interval;
+    private Long interval;
 
     private DateTime startTime;
 
@@ -45,11 +45,11 @@ public class AcquisitionTaskDescription {
         this.resources = resources;
     }
 
-    public Integer getInterval() {
+    public Long getInterval() {
         return interval;
     }
 
-    public void setInterval(Integer interval) {
+    public void setInterval(Long interval) {
         this.interval = interval;
     }
 

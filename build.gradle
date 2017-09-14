@@ -66,6 +66,7 @@ dependencies {
 
     compile('com.github.symbiote-h2020:SymbIoTeLibraries:develop-SNAPSHOT') { changing=true }
 
+
     // Use JUnit4
     testCompile 'junit:junit:4.12'
 }

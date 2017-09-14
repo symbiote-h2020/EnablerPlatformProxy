@@ -56,7 +56,7 @@ public class EnablerPlatformProxyTests {
         AcquisitionTaskDescription desc = manager.createDescriptionFromRequest(request);
 
         assertNotNull(desc);
-        assertEquals(desc.getInterval(),request.getInterval());
+        assertEquals(desc.getInterval(),request.getQueryInterval_ms());
         assertEquals(desc.getTaskId(),request.getTaskId());
         assertNotNull(desc.getStartTime());
         assertEquals(desc.getResources(),request.getResources());
@@ -120,7 +120,7 @@ public class EnablerPlatformProxyTests {
 
     private PlatformProxyAcquisitionStartRequest createAcquisitionStartRequest() {
         PlatformProxyAcquisitionStartRequest request = new PlatformProxyAcquisitionStartRequest();
-        request.setInterval(10);
+        request.setQueryInterval_ms(Long.valueOf(10000l));
         request.setTaskId("task1");
         PlatformProxyResourceInfo res1 = new PlatformProxyResourceInfo();
         res1.setAccessURL("URL1");

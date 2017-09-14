@@ -39,7 +39,7 @@ public class AcquisitionStopRequestedConsumer extends DefaultConsumer {
     @Override
     public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
         String msg = new String(body);
-        log.debug( "Consume search requested message: " + msg );
+        log.debug( "Consume acquisition stop requested message: " + msg );
 
         //Try to parse the message
         try {
