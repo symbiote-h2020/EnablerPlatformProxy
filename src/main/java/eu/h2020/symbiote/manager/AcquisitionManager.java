@@ -10,8 +10,8 @@ import eu.h2020.symbiote.model.AcquisitionTask;
 import eu.h2020.symbiote.model.AcquisitionTaskDescription;
 import eu.h2020.symbiote.repository.AcquisitionTaskDescriptionRepository;
 import eu.h2020.symbiote.security.TokenManager;
-import eu.h2020.symbiote.security.exceptions.aam.TokenValidationException;
-import eu.h2020.symbiote.security.token.Token;
+import eu.h2020.symbiote.security.commons.Token;
+import eu.h2020.symbiote.security.commons.exceptions.custom.ValidationException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.joda.time.DateTime;
@@ -136,7 +136,7 @@ public class AcquisitionManager {
                     info.getAccessURL()+"/Observations", HttpMethod.GET, entity, Observation[].class);
 
             return Arrays.asList(queryResponse.getBody());
-        } catch (TokenValidationException e) {
+        } catch (ValidationException e) {
             log.error("Error obtaining token for platform " + e.getMessage(), e);
             return Arrays.asList();
         }

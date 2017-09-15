@@ -1,11 +1,11 @@
 package eu.h2020.symbiote.security;
 
-import eu.h2020.symbiote.security.constants.AAMConstants;
-import eu.h2020.symbiote.security.enums.ValidationStatus;
-import eu.h2020.symbiote.security.exceptions.aam.TokenValidationException;
-import eu.h2020.symbiote.security.payloads.Credentials;
-import eu.h2020.symbiote.security.token.Token;
-import eu.h2020.symbiote.security.token.jwt.JWTEngine;
+import eu.h2020.symbiote.security.commons.SecurityConstants;
+import eu.h2020.symbiote.security.commons.Token;
+import eu.h2020.symbiote.security.commons.enums.ValidationStatus;
+import eu.h2020.symbiote.security.commons.exceptions.custom.ValidationException;
+import eu.h2020.symbiote.security.commons.jwt.JWTEngine;
+import eu.h2020.symbiote.security.communication.payloads.Credentials;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,7 +67,8 @@ public class TokenManager {
 //
 //        ResponseEntity<String> response = restTemplate.exchange(coreInterfaceUrl+coreInterfaceLoginPath, HttpMethod.POST, entity, String.class);
 
-            ResponseEntity<String> response = restTemplate.postForEntity(coreInterfaceUrl + AAMConstants.AAM_LOGIN, credentials, String.class);
+            //TODO check if proper call for R3
+            ResponseEntity<String> response = restTemplate.postForEntity(coreInterfaceUrl + SecurityConstants.AAM_GET_GUEST_TOKEN, credentials, String.class);
 
             if (response.getStatusCode().equals(HttpStatus.OK)) {
                 log.debug("Login in the core successful");
@@ -94,7 +95,7 @@ public class TokenManager {
         return result;
     }
 
-    public Token obtainValidPlatformToken(String paamAddress ) throws TokenValidationException {
+    public Token obtainValidPlatformToken(String paamAddress ) throws ValidationException {
         Token token = null;
         String existingToken = tokensMap.get(paamAddress);
         if( existingToken != null ) {
@@ -103,10 +104,10 @@ public class TokenManager {
                 if( validationStatus == ValidationStatus.VALID ) {
                     log.debug("Token is ok");
                     token = new Token(existingToken);
-                } else if (validationStatus == ValidationStatus.EXPIRED ) {
+                } else if (validationStatus == ValidationStatus.EXPIRED_TOKEN ) {
                     token = getNewPlatformToken(paamAddress);
                 }
-            } catch (TokenValidationException e) {
+            } catch (ValidationException e) {
                 log.warn("Token not valid: " + e.getMessage());
             }
         } else {
@@ -115,7 +116,7 @@ public class TokenManager {
         return token;
     }
 
-    private Token getNewPlatformToken( String paamAddress ) throws TokenValidationException {
+    private Token getNewPlatformToken( String paamAddress ) throws ValidationException {
         Token token = null;
         String coreToken = obtainCoreToken();
 
@@ -130,7 +131,7 @@ public class TokenManager {
 
         HttpEntity<String> entity = new HttpEntity<>("", httpHeaders);
 //
-        ResponseEntity<String> response = restTemplate.exchange(paamAddress + AAMConstants.AAM_REQUEST_FOREIGN_TOKEN, HttpMethod.POST, entity, String.class);
+        ResponseEntity<String> response = restTemplate.exchange(paamAddress + SecurityConstants.AAM_GET_FOREIGN_TOKEN, HttpMethod.POST, entity, String.class);
 
 //        ResponseEntity<String> response = restTemplate.postForEntity(paamAddress + AAMConstants.AAM_REQUEST_FOREIGN_TOKEN, "" , String.class);
 
@@ -166,14 +167,14 @@ public class TokenManager {
                 log.debug("Current token is valid");
                 return false;
             }
-            if( validationStatus == ValidationStatus.EXPIRED ) {
+            if( validationStatus == ValidationStatus.EXPIRED_TOKEN ) {
                 log.info("Core token expired, need to issue a new one");
                 return true;
             } else {
                 log.debug("Other problems with token : " + validationStatus );
                 return true;
             }
-        } catch (TokenValidationException e) {
+        } catch (ValidationException e) {
             log.error(e);
             return true;
         }

@@ -7,7 +7,6 @@ import eu.h2020.symbiote.messaging.RabbitManager;
 import eu.h2020.symbiote.model.AcquisitionTaskDescription;
 import eu.h2020.symbiote.repository.AcquisitionTaskDescriptionRepository;
 import eu.h2020.symbiote.security.TokenManager;
-import eu.h2020.symbiote.security.constants.AAMConstants;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -16,7 +15,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
