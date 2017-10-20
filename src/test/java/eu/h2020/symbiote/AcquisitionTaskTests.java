@@ -1,39 +1,34 @@
 package eu.h2020.symbiote;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.rabbitmq.client.*;
-import eu.h2020.symbiote.enabler.messaging.model.EnablerLogicDataAppearedMessage;
-import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyAcquisitionStartRequest;
-import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyResourceInfo;
-import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyTaskInfo;
+import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.Envelope;
+import eu.h2020.symbiote.enabler.messaging.model.*;
 import eu.h2020.symbiote.manager.AcquisitionManager;
+import eu.h2020.symbiote.manager.AuthorizationManager;
 import eu.h2020.symbiote.messaging.RabbitManager;
+import eu.h2020.symbiote.messaging.consumers.AcquisitionStartRequestedConsumer;
+import eu.h2020.symbiote.messaging.consumers.AcquisitionStopRequestedConsumer;
 import eu.h2020.symbiote.messaging.consumers.SingleReadingRequestedConsumer;
-import eu.h2020.symbiote.model.AcquisitionTask;
-import eu.h2020.symbiote.model.AcquisitionTaskDescription;
 import eu.h2020.symbiote.repository.AcquisitionTaskDescriptionRepository;
-import eu.h2020.symbiote.security.TokenManager;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
-import static org.junit.Assert.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class AcquisitionTaskTests {
@@ -41,9 +36,10 @@ public class AcquisitionTaskTests {
     public static final String RESOURCE_ID = "resource1";
     public static final String RESOURCE_URL = "http://someurl";
     public static final String TASK_ID = "1";
+    public static final String ENABLER_LOGIC_1 = "EnablerLogic1";
     RabbitManager rabbitManager;
     RestTemplate restTemplate;
-    TokenManager tokenManager;
+    AuthorizationManager authorizationManager;
     AcquisitionManager acquisitionManager;
     AcquisitionTaskDescriptionRepository repository;
 
@@ -51,7 +47,7 @@ public class AcquisitionTaskTests {
     public void setUp() {
         rabbitManager = Mockito.mock(RabbitManager.class);
         restTemplate = Mockito.mock(RestTemplate.class);
-        tokenManager = Mockito.mock(TokenManager.class);
+        authorizationManager = Mockito.mock(AuthorizationManager.class);
         acquisitionManager = Mockito.mock(AcquisitionManager.class);
         repository = Mockito.mock(AcquisitionTaskDescriptionRepository.class);
 
@@ -61,14 +57,77 @@ public class AcquisitionTaskTests {
         factory.setPassword("password");
     }
 
+    @Test
+    public void testStartAcquisitionConsumer() {
+        Channel channel = Mockito.mock(Channel.class);
+        AcquisitionStartRequestedConsumer consumer = new AcquisitionStartRequestedConsumer(channel, acquisitionManager);
+        Envelope envelope = Mockito.mock(Envelope.class);
+        AMQP.BasicProperties properties = new AMQP.BasicProperties();
 
-//    @Test
-//    public void testAcquisitionTaskAttemptsToReadData() {
-//        AcquisitionTaskDescription description = new AcquisitionTaskDescription();
-//        description.set
-//        new AcquisitionTask(description,restTemplate,acquisitionManager,tokenManager);
-//
-//    }
+        PlatformProxyAcquisitionStartRequest acquisitionStartRequest = getAcquisitionStartRequest();
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            consumer.handleDelivery("consumerTag", envelope, properties, mapper.writeValueAsBytes(acquisitionStartRequest));
+        } catch (IOException e) {
+            e.printStackTrace();
+            fail("Error should not happen in handle delivery");
+        }
+        try {
+            ArgumentCaptor<byte[]> argumentByteArray = ArgumentCaptor.forClass(byte[].class);
+            verify(channel, times(1)).basicPublish(anyString(), anyString(), any(), argumentByteArray.capture());
+            assertNotNull(argumentByteArray);
+
+            ArgumentCaptor<PlatformProxyAcquisitionStartRequest> argumentStartAcqInfo = ArgumentCaptor.forClass(PlatformProxyAcquisitionStartRequest .class);
+            verify(acquisitionManager, times(1)).startAcquisition(argumentStartAcqInfo.capture());
+            PlatformProxyAcquisitionStartRequest startReq = argumentStartAcqInfo.getValue();
+            assertEquals("Task id of the internal call must be equal", TASK_ID, startReq.getTaskId());
+            assertEquals("Logic name of the internal call must be equal", ENABLER_LOGIC_1, startReq.getEnablerLogicName());
+
+            //Try to deserialize and check values
+            PlatformProxyAcquisitionStartRequestResponse response = mapper.readValue(argumentByteArray.getValue(), PlatformProxyAcquisitionStartRequestResponse.class);
+            assertEquals("Task ids must be equal", TASK_ID, response.getTaskId());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            fail("Mock channel should not have any errors");
+        }
+    }
+
+    @Test
+    public void testStopAcquisitionConsumer() {
+        Channel channel = Mockito.mock(Channel.class);
+        AcquisitionStopRequestedConsumer consumer = new AcquisitionStopRequestedConsumer(channel, acquisitionManager);
+        Envelope envelope = Mockito.mock(Envelope.class);
+        AMQP.BasicProperties properties = new AMQP.BasicProperties();
+
+        List<String> acquisitionStopRequest = getAcquisitionStopRequest();
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            consumer.handleDelivery("consumerTag", envelope, properties, mapper.writeValueAsBytes(acquisitionStopRequest));
+        } catch (IOException e) {
+            e.printStackTrace();
+            fail("Error should not happen in handle delivery");
+        }
+        try {
+            ArgumentCaptor<byte[]> argumentByteArray = ArgumentCaptor.forClass(byte[].class);
+            verify(channel, times(1)).basicPublish(anyString(), anyString(), any(), argumentByteArray.capture());
+            assertNotNull(argumentByteArray);
+
+            ArgumentCaptor<List<String>> argumentStopAcqInfo = ArgumentCaptor.forClass((Class)List.class);
+            verify(acquisitionManager, times(1)).stopAcquisition(argumentStopAcqInfo.capture());
+            List<String> stopReq = argumentStopAcqInfo.getValue();
+            assertEquals("Should only call stop for one task", 1, stopReq.size());
+            assertEquals("Task id of the internal call must be equal", TASK_ID, stopReq.get(0));
+
+            //Try to deserialize and check values
+            String response = mapper.readValue(argumentByteArray.getValue(), String.class);
+            assertEquals("Task ids must be equal", "Response", response);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            fail("Mock channel should not have any errors");
+        }
+    }
 
     @Test
     public void testSingleAcquisitionConsumer() {
@@ -88,14 +147,14 @@ public class AcquisitionTaskTests {
         }
         try {
             ArgumentCaptor<byte[]> argumentByteArray = ArgumentCaptor.forClass(byte[].class);
-            verify(channel,times(1)).basicPublish(anyString(),anyString(),any(),argumentByteArray.capture());
+            verify(channel, times(1)).basicPublish(anyString(), anyString(), any(), argumentByteArray.capture());
             assertNotNull(argumentByteArray);
 
             ArgumentCaptor<PlatformProxyResourceInfo> argumentResInfo = ArgumentCaptor.forClass(PlatformProxyResourceInfo.class);
-            verify(acquisitionManager,times(1)).getObservationForResource(argumentResInfo.capture());
+            verify(acquisitionManager, times(1)).getObservationForResource(argumentResInfo.capture());
             PlatformProxyResourceInfo resInfo = argumentResInfo.getValue();
-            assertEquals("Resource id of the internal call must be equal", RESOURCE_ID, resInfo.getResourceId() );
-            assertEquals("Resource url of the internal call must be equal", RESOURCE_URL, resInfo.getAccessURL() );
+            assertEquals("Resource id of the internal call must be equal", RESOURCE_ID, resInfo.getResourceId());
+            assertEquals("Resource url of the internal call must be equal", RESOURCE_URL, resInfo.getAccessURL());
 
             //Try to deserialize and check values
             EnablerLogicDataAppearedMessage response = mapper.readValue(argumentByteArray.getValue(), EnablerLogicDataAppearedMessage.class);
@@ -118,6 +177,23 @@ public class AcquisitionTaskTests {
         info.setTaskId(TASK_ID);
 
         return info;
+    }
+
+    private PlatformProxyAcquisitionStartRequest getAcquisitionStartRequest() {
+        PlatformProxyAcquisitionStartRequest request = new PlatformProxyAcquisitionStartRequest();
+        request.setTaskId(TASK_ID);
+        request.setEnablerLogicName(ENABLER_LOGIC_1);
+        request.setQueryInterval_ms(Long.valueOf(10000l));
+        PlatformProxyResourceInfo resDesc = new PlatformProxyResourceInfo();
+        resDesc.setAccessURL(RESOURCE_URL);
+        resDesc.setResourceId(RESOURCE_ID);
+        List<PlatformProxyResourceInfo> resources = Arrays.asList(resDesc);
+        request.setResources(resources);
+        return request;
+    }
+
+    private List<String> getAcquisitionStopRequest() {
+        return Arrays.asList(TASK_ID);
     }
 
 }

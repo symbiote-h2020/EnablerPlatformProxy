@@ -14,6 +14,8 @@ import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyAcquisitionStartRe
 import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyResourceInfo;
 import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyTaskInfo;
 import eu.h2020.symbiote.manager.AcquisitionManager;
+import eu.h2020.symbiote.security.handler.SecurityHandler;
+import org.apache.catalina.security.SecurityUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.joda.time.DateTime;

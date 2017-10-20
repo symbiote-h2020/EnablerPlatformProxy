@@ -44,7 +44,6 @@ public class AcquisitionStartRequestedConsumer extends DefaultConsumer {
         //Try to parse the message
         try {
             ObjectMapper mapper = new ObjectMapper();
-            //TODO read proper value and handle acq start request
             PlatformProxyAcquisitionStartRequest acquisitionStartRequest = mapper.readValue(msg, PlatformProxyAcquisitionStartRequest.class);
 
             acquisitionManager.startAcquisition(acquisitionStartRequest);

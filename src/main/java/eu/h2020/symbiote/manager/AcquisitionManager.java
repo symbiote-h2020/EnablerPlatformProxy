@@ -9,11 +9,12 @@ import eu.h2020.symbiote.model.AcquisitionStatus;
 import eu.h2020.symbiote.model.AcquisitionTask;
 import eu.h2020.symbiote.model.AcquisitionTaskDescription;
 import eu.h2020.symbiote.repository.AcquisitionTaskDescriptionRepository;
-import eu.h2020.symbiote.security.TokenManager;
 import eu.h2020.symbiote.security.commons.Token;
+import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.commons.exceptions.custom.ValidationException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tomcat.util.http.parser.Authorization;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
@@ -23,7 +24,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import javax.annotation.PostConstruct;
 import java.util.*;
 
 /**
@@ -39,17 +39,17 @@ public class AcquisitionManager {
     private final AcquisitionTaskDescriptionRepository acquisitionTaskDescriptionRepository;
     private final RabbitManager rabbitManager;
     private final RestTemplate restTemplate;
-    private final TokenManager tokenManager;
+    private final AuthorizationManager authorizationManager;
 
 //    private Map<String, AcquisitionTask> tasks = new HashMap<>();
     private Map<String, Timer> tasks = new HashMap<>();
 
     @Autowired
-    public AcquisitionManager(AcquisitionTaskDescriptionRepository acquisitionTaskDescriptionRepository, RabbitManager rabbitManager, RestTemplate restTemplate, TokenManager tokenManager) {
+    public AcquisitionManager(AcquisitionTaskDescriptionRepository acquisitionTaskDescriptionRepository, RabbitManager rabbitManager, RestTemplate restTemplate, AuthorizationManager authorizationManager) {
         this.acquisitionTaskDescriptionRepository = acquisitionTaskDescriptionRepository;
         this.rabbitManager = rabbitManager;
         this.restTemplate = restTemplate;
-        this.tokenManager = tokenManager;
+        this.authorizationManager = authorizationManager;
     }
 
     public void init() {
@@ -94,7 +94,7 @@ public class AcquisitionManager {
     }
 
     private void startAcquisitionTimerTask(AcquisitionTaskDescription description) {
-        AcquisitionTask task = new AcquisitionTask(description, restTemplate, this, tokenManager);
+        AcquisitionTask task = new AcquisitionTask(description, restTemplate, this, authorizationManager);
         Timer taskTimer = new Timer("Acquisition task " + description.getTaskId(),true);
 
         long period = description.getInterval().longValue();
@@ -127,10 +127,17 @@ public class AcquisitionManager {
         HttpHeaders httpHeaders = new HttpHeaders();
 //        httpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
 //        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-        String paamAddress = tokenManager.getPaamAddress(info.getAccessURL());
+        String paamAddress = authorizationManager.getPaamAddress(info.getAccessURL());
         try {
-            Token platformToken = tokenManager.obtainValidPlatformToken(paamAddress);
-            httpHeaders.set("X-Auth-Token", platformToken.getToken());
+            String platformId = authorizationManager.getPlatformIdForAAMAddress(paamAddress);
+//            Token platformToken = tokenManager.obtainValidPlatformToken(paamAddress);
+//            httpHeaders.set("X-Auth-Token", platformToken.getToken());
+
+            Map<String, String> headers = authorizationManager.generateSecurityHeaders(platformId);
+            for (Map.Entry<String, String> entry : headers.entrySet()) {
+                httpHeaders.add(entry.getKey(), entry.getValue());
+            }
+
             HttpEntity<String> entity = new HttpEntity<>(httpHeaders);
             ResponseEntity<Observation[]> queryResponse = restTemplate.exchange(
                     info.getAccessURL()+"/Observations", HttpMethod.GET, entity, Observation[].class);
@@ -139,8 +146,13 @@ public class AcquisitionManager {
         } catch (ValidationException e) {
             log.error("Error obtaining token for platform " + e.getMessage(), e);
             return Arrays.asList();
+        } catch (SecurityHandlerException e) {
+            log.error("Security handler exception occurred: " + e.getMessage(), e);
+            return Arrays.asList();
+        } catch (Exception e) {
+            log.error("Internal exception occurred: " + e.getMessage(), e);
+            return Arrays.asList();
         }
-
     }
 
 }

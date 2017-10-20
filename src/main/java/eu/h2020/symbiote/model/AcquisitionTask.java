@@ -4,14 +4,13 @@ import eu.h2020.symbiote.cloud.model.data.observation.Observation;
 import eu.h2020.symbiote.enabler.messaging.model.EnablerLogicDataAppearedMessage;
 import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyResourceInfo;
 import eu.h2020.symbiote.manager.AcquisitionManager;
-import eu.h2020.symbiote.security.TokenManager;
+import eu.h2020.symbiote.manager.AuthorizationManager;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.joda.time.DateTime;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.TimerTask;
 
@@ -22,7 +21,7 @@ public class AcquisitionTask extends TimerTask {
 
     private static final Log log = LogFactory.getLog(AcquisitionTask.class);
 
-    private final TokenManager tokenManager;
+//    private final TokenManager tokenManager;
 
     private final AcquisitionTaskDescription description;
 
@@ -30,18 +29,21 @@ public class AcquisitionTask extends TimerTask {
 
     private final AcquisitionManager manager;
 
-    public AcquisitionTask(AcquisitionTaskDescription description, RestTemplate restTemplate, AcquisitionManager manager, TokenManager tokenManager) {
+    private final AuthorizationManager authorizationManager;
+
+    public AcquisitionTask(AcquisitionTaskDescription description, RestTemplate restTemplate, AcquisitionManager manager, AuthorizationManager authorizationManager) {
         this.description = description;
         this.restTemplate = restTemplate;
         this.manager = manager;
-        this.tokenManager = tokenManager;
+        this.authorizationManager = authorizationManager;
+//        this.tokenManager = tokenManager;
     }
 
     @Override
     public void run() {
         log.debug("Executing acquisition for task " + description.getTaskId());
         //1. Obtain token
-        String token = this.tokenManager.obtainCoreToken();
+//        String token = this.tokenManager.obtainCoreToken();
 
         //2. Send request to RAP and dl data
         log.debug("Accessing resources for task " + description.getTaskId() + " ...");
@@ -49,6 +51,8 @@ public class AcquisitionTask extends TimerTask {
         int i = 0;
         for (PlatformProxyResourceInfo info : description.getResources()) {
             log.debug("[" + ++i + "] Trying " + info.getAccessURL() + " ...");
+
+//            this.authorizationManager.requestHomeToken();
             List<Observation> resObs = manager.getObservationForResource(info);
             log.debug("[" + ++i + "] " + info.getAccessURL() + " got " + resObs.size() + " observations");
             observations.addAll(resObs);

@@ -3,43 +3,38 @@ package eu.h2020.symbiote;
 import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyAcquisitionStartRequest;
 import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyResourceInfo;
 import eu.h2020.symbiote.manager.AcquisitionManager;
+import eu.h2020.symbiote.manager.AuthorizationManager;
 import eu.h2020.symbiote.messaging.RabbitManager;
 import eu.h2020.symbiote.model.AcquisitionTaskDescription;
 import eu.h2020.symbiote.repository.AcquisitionTaskDescriptionRepository;
-import eu.h2020.symbiote.security.TokenManager;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
 import java.util.List;
 
-import static org.mockito.Matchers.anyString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
-
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class EnablerPlatformProxyTests {
 
     RabbitManager rabbitManager;
     RestTemplate restTemplate;
-    TokenManager tokenManager;
+    AuthorizationManager authorizationManager;
     AcquisitionTaskDescriptionRepository repository;
 
     @Before
     public void setUp() {
         rabbitManager = Mockito.mock(RabbitManager.class);
         restTemplate = Mockito.mock(RestTemplate.class);
-        tokenManager = Mockito.mock(TokenManager.class);
+        authorizationManager = Mockito.mock(AuthorizationManager .class);
         repository = Mockito.mock(AcquisitionTaskDescriptionRepository.class);
     }
 
@@ -49,7 +44,7 @@ public class EnablerPlatformProxyTests {
 
         AcquisitionTaskDescriptionRepository repository = Mockito.mock(AcquisitionTaskDescriptionRepository.class);
 
-        AcquisitionManager manager = new AcquisitionManager(repository,rabbitManager,restTemplate,tokenManager);
+        AcquisitionManager manager = new AcquisitionManager(repository,rabbitManager,restTemplate,authorizationManager);
         PlatformProxyAcquisitionStartRequest request = createAcquisitionStartRequest();
         AcquisitionTaskDescription desc = manager.createDescriptionFromRequest(request);
 
@@ -65,7 +60,7 @@ public class EnablerPlatformProxyTests {
     public void testAcquisitionManagerStartAcquisitionSavesEntry() {
 
 
-        AcquisitionManager manager = new AcquisitionManager(repository,rabbitManager,restTemplate,tokenManager);
+        AcquisitionManager manager = new AcquisitionManager(repository,rabbitManager,restTemplate,authorizationManager);
 
 
 
@@ -76,7 +71,7 @@ public class EnablerPlatformProxyTests {
     @Test
     public void testAcquisitionManagerStopAcquisitionRemovesEntry() {
 
-        AcquisitionManager manager = new AcquisitionManager(repository,rabbitManager,restTemplate,tokenManager);
+        AcquisitionManager manager = new AcquisitionManager(repository,rabbitManager,restTemplate,authorizationManager);
 
 
         manager.startAcquisition(createAcquisitionStartRequest());
@@ -90,7 +85,7 @@ public class EnablerPlatformProxyTests {
     @Test
     public void testAcquisitionManagerAcquisitionExecutes() {
 
-        AcquisitionManager manager = new AcquisitionManager(repository,rabbitManager,restTemplate,tokenManager);
+        AcquisitionManager manager = new AcquisitionManager(repository,rabbitManager,restTemplate,authorizationManager);
 
 
 
@@ -98,23 +93,24 @@ public class EnablerPlatformProxyTests {
         verify(repository).save((AcquisitionTaskDescription)any());
     }
 
-    @Test
-    public void testAcquireToken() {
-
-        String token = "sometoken";
-        RestTemplate restTemplate = Mockito.mock(RestTemplate.class);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.put("X-Auth-Token",Arrays.asList(token));
-        ResponseEntity<String> response = new ResponseEntity<String>(headers, HttpStatus.OK);
-        when(restTemplate.postForEntity(anyString(),anyString(),Mockito.eq(String.class) )).thenReturn(response);
-
-        TokenManager tokenManager = new TokenManager(restTemplate);
-        String obtainedToken = tokenManager.obtainCoreToken();
-
-        assertNotNull(obtainedToken);
-        assertEquals(obtainedToken,token);
-    }
+//    @Test
+//    public void testAcquireToken() {
+//
+//        String token = "sometoken";
+//        RestTemplate restTemplate = Mockito.mock(RestTemplate.class);
+//
+//        HttpHeaders headers = new HttpHeaders();
+//        headers.put("X-Auth-Token",Arrays.asList(token));
+//        ResponseEntity<String> response = new ResponseEntity<String>(headers, HttpStatus.OK);
+//        when(restTemplate.postForEntity(anyString(),anyString(),Mockito.eq(String.class) )).thenReturn(response);
+//
+////        TokenManager tokenManager = new TokenManager(restTemplate);
+////        String obtainedToken = tokenManager.obtainCoreToken();
+//        authorizationManager = new AuthorizationManager()
+//
+//        assertNotNull(obtainedToken);
+//        assertEquals(obtainedToken,token);
+//    }
 
     private PlatformProxyAcquisitionStartRequest createAcquisitionStartRequest() {
         PlatformProxyAcquisitionStartRequest request = new PlatformProxyAcquisitionStartRequest();
