@@ -55,7 +55,7 @@ public class RabbitManager {
     @Value("${rabbit.routingKey.enablerPlatformProxy.acquisitionStartRequested}")
     private String acquisitionStartRequestedRoutingKey;
 
-    @Value("${rabbit.routingKey.enablerPlatformProxy.acquisitionStopRequested}")
+    @Value("${rabbit.routingKey.enablerPlatformProxy.cancelTasks}")
     private String acquisitionStopRequestedRoutingKey;
 
     @Value("${rabbit.routingKey.enablerPlatformProxy.singleReadRequested}")
