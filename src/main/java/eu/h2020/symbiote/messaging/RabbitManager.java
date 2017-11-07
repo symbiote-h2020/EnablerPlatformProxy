@@ -65,7 +65,7 @@ public class RabbitManager {
     private String dataAppearedRoutingKey;
 
     private final String startAcquisitionQueueName = "symbIoTe-enabler-platormProxy-StartAcquisition";
-    private final String stopAcquisitionQueueName = "symbIoTe-enabler-platormProxy-SopAcquisition";
+    private final String stopAcquisitionQueueName = "symbIoTe-enabler-platormProxy-StopAcquisition";
     private final String singleReadingQueueName = "symbIoTe-enabler-platormProxy-SingleReading";
 
     private Connection connection;

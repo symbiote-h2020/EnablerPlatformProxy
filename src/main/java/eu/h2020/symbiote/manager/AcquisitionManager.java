@@ -140,7 +140,14 @@ public class AcquisitionManager {
             ResponseEntity<Observation[]> queryResponse = restTemplate.exchange(
                     info.getAccessURL()+"/Observations", HttpMethod.GET, entity, Observation[].class);
 
-            return Arrays.asList(queryResponse.getBody());
+            if (authorizationManager.verifyServiceResponse(queryResponse.getHeaders(), "rap", platformId)) {
+                log.info("Service response from RAP of platform " + platformId + " is valid!");
+                return Arrays.asList(queryResponse.getBody());
+            }
+            else {
+                log.info("Service response from RAP of platform " + platformId + " is NOT valid!");
+                return new ArrayList<>();
+            }
         } catch (ValidationException e) {
             log.error("Error obtaining token for platform " + e.getMessage(), e);
             return Arrays.asList();
