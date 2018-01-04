@@ -125,6 +125,8 @@ public class AcquisitionManager {
         HttpHeaders httpHeaders = new HttpHeaders();
 //        httpHeaders.set("Accept", MediaType.APPLICATION_JSON_VALUE);
 //        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+
+        //TODO fix - accessUrl check if not null
         String paamAddress = authorizationManager.getPaamAddress(info.getAccessURL());
         try {
             String platformId = authorizationManager.getPlatformIdForAAMAddress(paamAddress);

@@ -14,6 +14,8 @@ import eu.h2020.symbiote.model.cim.Observation;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.joda.time.DateTime;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -26,8 +28,9 @@ import java.util.List;
  */
 public class SingleReadingRequestedConsumer extends DefaultConsumer {
 
-    private static Log log = LogFactory.getLog(AcquisitionStopRequestedConsumer.class);
+    private static Log log = LogFactory.getLog(SingleReadingRequestedConsumer.class);
     private final AcquisitionManager acquisitionManager;
+    private final RabbitTemplate rabbitTemplate;
 
     /**
      * Constructs a new instance and records its association to the passed-in channel.
@@ -35,9 +38,10 @@ public class SingleReadingRequestedConsumer extends DefaultConsumer {
      * @param channel the channel to which this consumer is attached
      *
      */
-    public SingleReadingRequestedConsumer(Channel channel, AcquisitionManager acquisitionManager) {
+    public SingleReadingRequestedConsumer(Channel channel, AcquisitionManager acquisitionManager, RabbitTemplate rabbitTemplate) {
         super(channel);
         this.acquisitionManager = acquisitionManager;
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     @Override
@@ -50,9 +54,9 @@ public class SingleReadingRequestedConsumer extends DefaultConsumer {
             ObjectMapper mapper = new ObjectMapper();
             PlatformProxyTaskInfo singleReadInfo = mapper.readValue(msg, PlatformProxyTaskInfo.class);
             EnablerLogicDataAppearedMessage message = new EnablerLogicDataAppearedMessage();
-            message.setTaskId(singleReadInfo.getTaskId());
 
             if( singleReadInfo != null ) {
+                message.setTaskId(singleReadInfo.getTaskId());
                 log.debug( "Executing reads for " + singleReadInfo.getResources()!=null? singleReadInfo.getResources().size() + " resources ":"resources are empty");
                 List<Observation> allObservations = new ArrayList<>();
                 singleReadInfo.getResources().forEach(res -> allObservations.addAll(acquisitionManager.getObservationForResource(res)));
@@ -63,15 +67,21 @@ public class SingleReadingRequestedConsumer extends DefaultConsumer {
 
             log.debug( "Sending response to the sender");
 
-            byte[] responseBytes = mapper.writeValueAsBytes(message);
+//            byte[] responseBytes = mapper.writeValueAsBytes(message);
+//
+//            AMQP.BasicProperties replyProps = new AMQP.BasicProperties
+//                    .Builder()
+//                    .correlationId(properties.getCorrelationId())
+//                    .build();
+//            this.getChannel().basicPublish("", properties.getReplyTo(), replyProps, responseBytes);
 
-            AMQP.BasicProperties replyProps = new AMQP.BasicProperties
-                    .Builder()
-                    .correlationId(properties.getCorrelationId())
-                    .build();
-            this.getChannel().basicPublish("", properties.getReplyTo(), replyProps, responseBytes);
+            rabbitTemplate.convertAndSend(properties.getReplyTo(), message,
+                    m -> {
+                        m.getMessageProperties().setCorrelationId(properties.getCorrelationId());
+                        return m;
+                    });
+
             log.debug("-> Message sent back");
-
             this.getChannel().basicAck(envelope.getDeliveryTag(), false);
 
         } catch( JsonParseException | JsonMappingException e ) {

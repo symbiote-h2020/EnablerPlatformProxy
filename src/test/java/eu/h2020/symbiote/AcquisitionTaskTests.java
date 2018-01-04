@@ -20,6 +20,8 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.springframework.amqp.core.MessagePostProcessor;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
@@ -42,6 +44,7 @@ public class AcquisitionTaskTests {
     AuthorizationManager authorizationManager;
     AcquisitionManager acquisitionManager;
     AcquisitionTaskDescriptionRepository repository;
+    RabbitTemplate rabbitTemplate;
 
     @Before
     public void setUp() {
@@ -50,6 +53,7 @@ public class AcquisitionTaskTests {
         authorizationManager = Mockito.mock(AuthorizationManager.class);
         acquisitionManager = Mockito.mock(AcquisitionManager.class);
         repository = Mockito.mock(AcquisitionTaskDescriptionRepository.class);
+        rabbitTemplate = Mockito.mock(RabbitTemplate.class);
 
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost("localhost");
@@ -132,7 +136,7 @@ public class AcquisitionTaskTests {
     @Test
     public void testSingleAcquisitionConsumer() {
         Channel channel = Mockito.mock(Channel.class);
-        SingleReadingRequestedConsumer consumer = new SingleReadingRequestedConsumer(channel, acquisitionManager);
+        SingleReadingRequestedConsumer consumer = new SingleReadingRequestedConsumer(channel, acquisitionManager, rabbitTemplate);
         Envelope envelope = Mockito.mock(Envelope.class);
         AMQP.BasicProperties properties = new AMQP.BasicProperties();
 
@@ -145,10 +149,11 @@ public class AcquisitionTaskTests {
             e.printStackTrace();
             fail("Error should not happen in handle delivery");
         }
-        try {
-            ArgumentCaptor<byte[]> argumentByteArray = ArgumentCaptor.forClass(byte[].class);
-            verify(channel, times(1)).basicPublish(anyString(), anyString(), any(), argumentByteArray.capture());
-            assertNotNull(argumentByteArray);
+
+            ArgumentCaptor<EnablerLogicDataAppearedMessage> returnMsg = ArgumentCaptor.forClass(EnablerLogicDataAppearedMessage.class);
+            verify(rabbitTemplate, times(1)).convertAndSend(anyString(),returnMsg.capture(),(MessagePostProcessor)anyObject());
+            assertNotNull(returnMsg);
+            assertNotNull(returnMsg.getValue());
 
             ArgumentCaptor<PlatformProxyResourceInfo> argumentResInfo = ArgumentCaptor.forClass(PlatformProxyResourceInfo.class);
             verify(acquisitionManager, times(1)).getObservationForResource(argumentResInfo.capture());
@@ -157,13 +162,7 @@ public class AcquisitionTaskTests {
             assertEquals("Resource url of the internal call must be equal", RESOURCE_URL, resInfo.getAccessURL());
 
             //Try to deserialize and check values
-            EnablerLogicDataAppearedMessage response = mapper.readValue(argumentByteArray.getValue(), EnablerLogicDataAppearedMessage.class);
-            assertEquals("Task ids must be equal", TASK_ID, response.getTaskId());
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            fail("Mock channel should not have any errors");
-        }
+            assertEquals("Task ids must be equal", TASK_ID, returnMsg.getValue().getTaskId());
     }
 
     private PlatformProxyTaskInfo getTestTaskInfo() {

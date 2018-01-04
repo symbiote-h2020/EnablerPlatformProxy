@@ -48,4 +48,10 @@ public class AuthorizationManagerTests {
         assertEquals("Generated paam adress must be the same", AAM_ADDRESS,result);
     }
 
+    @Test
+    public void testGetWrongPaamAddress() {
+        String result = manager.getPaamAddress(RAP_ADDRESS);
+        assertEquals("Generated paam adress must be the same", AAM_ADDRESS,result);
+    }
+
 }

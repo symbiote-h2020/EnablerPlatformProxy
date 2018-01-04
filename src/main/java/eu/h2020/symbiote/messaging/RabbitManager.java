@@ -10,6 +10,7 @@ import eu.h2020.symbiote.messaging.consumers.AcquisitionStopRequestedConsumer;
 import eu.h2020.symbiote.messaging.consumers.SingleReadingRequestedConsumer;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -37,6 +38,7 @@ public class RabbitManager {
     private String rabbitUsername;
     @Value("${rabbit.password}")
     private String rabbitPassword;
+
 
     @Value("${rabbit.exchange.enablerLogic.name}")
     private String enablerLogicExchangeName;
@@ -69,10 +71,13 @@ public class RabbitManager {
     private final String singleReadingQueueName = "symbIoTe-enabler-platormProxy-SingleReading";
 
     private Connection connection;
+    private RabbitTemplate rabbitTemplate;
 
     @Autowired
-    public RabbitManager(@Lazy AcquisitionManager acquisitionManager) {
+    public RabbitManager(@Lazy AcquisitionManager acquisitionManager,
+                         RabbitTemplate rabbitTemplate ) {
         this.acquisitionManager = acquisitionManager;
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     /**
@@ -227,7 +232,7 @@ public class RabbitManager {
         Channel channel = connection.createChannel();
         channel.queueDeclare(singleReadingQueueName, false,true,true,null);
         channel.queueBind(singleReadingQueueName, enablerPlatformProxyExchangeName, singleReadingRequestedRoutingQueue);
-        SingleReadingRequestedConsumer consumer = new SingleReadingRequestedConsumer(channel,acquisitionManager);
+        SingleReadingRequestedConsumer consumer = new SingleReadingRequestedConsumer(channel,acquisitionManager,rabbitTemplate);
 
         log.debug("Creating single data reading consumer");
         channel.basicConsume(singleReadingQueueName, false, consumer);

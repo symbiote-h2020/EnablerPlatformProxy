@@ -1,6 +1,7 @@
 buildscript {
     ext {
-        springBootVersion = '1.5.3.RELEASE'
+        springBootVersion = '1.5.8.RELEASE'
+        springCloudVersion = 'Dalston.SR4'
     }
     repositories {
         mavenCentral()
@@ -38,6 +39,9 @@ repositories {
     maven { 
         url "https://jitpack.io" 
     }
+    maven {
+        url 'https://repo.spring.io/libs-snapshot'
+    }
 }
 
 // Spring related configs
@@ -57,10 +61,13 @@ dependencies {
     compile('org.springframework.cloud:spring-cloud-starter-config')
     compile('org.springframework.cloud:spring-cloud-starter-eureka')
 //    compile('org.springframework.cloud:spring-cloud-starter-zipkin') // Causes the java.net.ConnectException if Zipkin offline
-    compile('org.springframework.cloud:spring-cloud-starter-stream-rabbit')
+//    compile('org.springframework.cloud:spring-cloud-starter-stream-rabbit')
     compile('org.springframework.boot:spring-boot-starter-data-rest')
     compile('org.springframework.boot:spring-boot-starter-web')
     compile('org.springframework.boot:spring-boot-starter-data-mongodb')
+
+    compile('org.springframework.amqp:spring-amqp:2.0.0.M1')
+    compile('org.springframework.amqp:spring-rabbit:2.0.0.M1')
 
     testCompile('org.springframework.boot:spring-boot-starter-test')
 
