@@ -20,6 +20,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
@@ -139,8 +140,20 @@ public class AcquisitionManager {
             }
 
             HttpEntity<String> entity = new HttpEntity<>(httpHeaders);
-            ResponseEntity<Observation[]> queryResponse = restTemplate.exchange(
-                    info.getAccessURL()+"/Observations", HttpMethod.GET, entity, Observation[].class);
+            ResponseEntity<Observation[]> queryResponse = null;
+            try {
+                queryResponse = restTemplate.exchange(
+                        info.getAccessURL() + "/Observations", HttpMethod.GET, entity, Observation[].class);
+            } catch( RestClientException e ) {
+                log.debug("Could not access OData endpoint, trying with REST");
+                Optional<String> restUrl = PlatformProxyUtil.generateRestSensorEndpoint(info.getAccessURL());
+                if (restUrl.isPresent() ) {
+                    queryResponse = restTemplate.exchange(
+                            restUrl.get(), HttpMethod.GET, entity, Observation[].class);
+                } else {
+                    log.error("Could not generate proper REST endpoint, problem with parsing " + info.getAccessURL());
+                }
+            }
 
             if (authorizationManager.verifyServiceResponse(queryResponse.getHeaders(), "rap", platformId)) {
                 log.info("Service response from RAP of platform " + platformId + " is valid!");

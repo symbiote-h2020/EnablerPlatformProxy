@@ -9,6 +9,7 @@ import com.rabbitmq.client.Envelope;
 import eu.h2020.symbiote.enabler.messaging.model.*;
 import eu.h2020.symbiote.manager.AcquisitionManager;
 import eu.h2020.symbiote.manager.AuthorizationManager;
+import eu.h2020.symbiote.manager.PlatformProxyUtil;
 import eu.h2020.symbiote.messaging.RabbitManager;
 import eu.h2020.symbiote.messaging.consumers.AcquisitionStartRequestedConsumer;
 import eu.h2020.symbiote.messaging.consumers.AcquisitionStopRequestedConsumer;
@@ -25,8 +26,10 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyString;
@@ -163,6 +166,18 @@ public class AcquisitionTaskTests {
 
             //Try to deserialize and check values
             assertEquals("Task ids must be equal", TASK_ID, returnMsg.getValue().getTaskId());
+    }
+
+    @Test
+    public void testGenerateRestEndpointAddress() {
+        String resourceId = "12345";
+        String address1 = "https://www.example.com/rap/Sensors('"+resourceId+"')";
+        String address2 = "https://www.example.com/rap/Sensor/"+resourceId;
+
+        Optional<String> result = PlatformProxyUtil.generateRestSensorEndpoint(address1);
+        assertTrue(result.isPresent());
+        assertEquals("Addresses must be equal",address2, result.get());
+
     }
 
     private PlatformProxyTaskInfo getTestTaskInfo() {
