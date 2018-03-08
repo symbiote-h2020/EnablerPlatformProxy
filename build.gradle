@@ -71,7 +71,7 @@ dependencies {
 
     testCompile('org.springframework.boot:spring-boot-starter-test')
 
-    compile('com.github.symbiote-h2020:SymbIoTeLibraries:3.+') { changing=true }
+    compile('com.github.symbiote-h2020:SymbIoTeLibraries:5.7.+') { changing=true }
 
 
     // Use JUnit4

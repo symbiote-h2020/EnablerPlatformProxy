@@ -148,6 +148,9 @@ public class AuthorizationManager {
                 } catch (NoSuchAlgorithmException | CertificateException e) {
                     log.info("Exception during serviceResponse verification", e);
                     return false;
+                } catch (SecurityHandlerException e) {
+                    log.info("Security Handler exception occurred", e);
+                    return false;
                 }
             }
 
