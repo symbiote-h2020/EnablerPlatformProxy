@@ -16,12 +16,12 @@ public class PlatformProxyUtil {
      * @return REST address of the sensor or <code>null</code> if
      */
     public static Optional<String> generateRestSensorEndpoint(String originalAddress ){
-        String result = null;
         int sensorsIndex = StringUtils.lastIndexOf(originalAddress, "Sensors");
         if( sensorsIndex > 0 ) {
             String resourceId = StringUtils.substring(originalAddress, sensorsIndex + 9, originalAddress.length() - 2);
-            result = originalAddress.substring(0, sensorsIndex + 6) + "/" + resourceId;
+            return Optional.of(originalAddress.substring(0, sensorsIndex + 6) + "/" + resourceId);
+        } else {
+            return Optional.empty();
         }
-        return Optional.of(result);
     }
 }

@@ -41,33 +41,51 @@ public class AcquisitionTask extends TimerTask {
 
     @Override
     public void run() {
-        log.debug("Executing acquisition for task " + description.getTaskId());
-        //1. Obtain token
+        try {
+            log.debug("Executing acquisition for task " + description.getTaskId());
+            //1. Obtain token
 //        String token = this.tokenManager.obtainCoreToken();
 
-        //2. Send request to RAP and dl data
-        log.debug("Accessing resources for task " + description.getTaskId() + " ...");
-        List<Observation> observations = new ArrayList<>();
-        int i = 0;
-        for (PlatformProxyResourceInfo info : description.getResources()) {
-            log.debug("[" + ++i + "] Trying " + info.getAccessURL() + " ...");
+            //2. Send request to RAP and dl data
+            log.debug("Accessing resources for task " + description.getTaskId() + " ...");
+            List<Observation> observations = new ArrayList<>();
+            int i = 0;
+            for (PlatformProxyResourceInfo info : description.getResources()) {
+                log.debug("[" + ++i + "] Trying " + info.getAccessURL() + " ...");
 
 //            this.authorizationManager.requestHomeToken();
-            List<Observation> resObs = manager.getObservationForResource(info);
-            log.debug("[" + ++i + "] " + info.getAccessURL() + " got " + resObs.size() + " observations");
-            observations.addAll(resObs);
-        }
+                List<Observation> resObs = manager.getObservationForResource(info);
+                log.debug("[" + ++i + "] " + info.getAccessURL() + " got " + resObs.size() + " observations");
+                if (resObs.size() > 0) {
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("res: ");
+                    sb.append(resObs.get(0).getResourceId());
+                    sb.append(" obsValues: ");
+                    resObs.get(0).getObsValues().stream().forEach(obsVal -> {
+                        sb.append("[ ");
+                        sb.append(obsVal.getObsProperty().getName());
+                        sb.append(" - ");
+                        sb.append(obsVal.getValue());
+                        sb.append(" ]");
+                    });
+                    log.debug("Printing first obs results: " + sb.toString());
+                }
+                observations.addAll(resObs);
+            }
 
-        //3. Create new data appeared event if there is at least one observation
-        if( observations.size() > 0 ) {
-            EnablerLogicDataAppearedMessage message = new EnablerLogicDataAppearedMessage();
-            message.setTaskId(description.getTaskId());
-            message.setObservations(observations);
-            message.setTimestamp("" + DateTime.now().getMillis());
+            //3. Create new data appeared event if there is at least one observation
+            if (observations.size() > 0) {
+                EnablerLogicDataAppearedMessage message = new EnablerLogicDataAppearedMessage();
+                message.setTaskId(description.getTaskId());
+                message.setObservations(observations);
+                message.setTimestamp("" + DateTime.now().getMillis());
 
-            this.manager.dataAppeared(message);
-        } else {
-            log.info("Returned 0 observations: skipping informing enabler logic");
+                this.manager.dataAppeared(message);
+            } else {
+                log.info("Returned 0 observations: skipping informing enabler logic");
+            }
+        } catch( Exception e ) {
+            log.error("Unexcepted error occurred when executing scheduled task " + description.getTaskId(), e);
         }
 
     }
