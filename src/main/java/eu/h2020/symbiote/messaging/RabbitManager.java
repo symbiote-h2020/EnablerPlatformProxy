@@ -4,10 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.client.*;
 import eu.h2020.symbiote.enabler.messaging.model.EnablerLogicDataAppearedMessage;
+import eu.h2020.symbiote.enabler.messaging.model.ServiceExecutionTaskResponse;
 import eu.h2020.symbiote.manager.AcquisitionManager;
-import eu.h2020.symbiote.messaging.consumers.AcquisitionStartRequestedConsumer;
-import eu.h2020.symbiote.messaging.consumers.AcquisitionStopRequestedConsumer;
-import eu.h2020.symbiote.messaging.consumers.SingleReadingRequestedConsumer;
+import eu.h2020.symbiote.messaging.consumers.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -66,9 +65,17 @@ public class RabbitManager {
     @Value("${rabbit.routingKey.enablerLogic.dataAppeared}")
     private String dataAppearedRoutingKey;
 
+    @Value("${rabbit.routingKey.enablerPlatformProxy.executeServiceRequested}")
+    private String executeServiceRoutingKey;
+
+    @Value("${rabbit.routingKey.enablerPlatformProxy.executeActuatorRequested}")
+    private String executeActuatorRoutingKey;
+
     private final String startAcquisitionQueueName = "symbIoTe-enabler-platormProxy-StartAcquisition";
     private final String stopAcquisitionQueueName = "symbIoTe-enabler-platormProxy-StopAcquisition";
     private final String singleReadingQueueName = "symbIoTe-enabler-platormProxy-SingleReading";
+    private final String serviceExecutionQueueName = "symbIoTe-enabler-platormProxy-serviceExecution";
+    private final String actuatorExecutionQueueName = "symbIoTe-enabler-platormProxy-actuatorExecution";
 
     private Connection connection;
     private RabbitTemplate rabbitTemplate;
@@ -168,6 +175,9 @@ public class RabbitManager {
             registerAcquisitionStartRequestedConsumer();
             registerAcquisitionStopRequestedConsumer();
             registerSingleReadingRequestedConsumer();
+            registerServiceExecutionRequestedConsumer();
+            registerActuatorExecutionRequestedConsumer();
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -238,7 +248,33 @@ public class RabbitManager {
         channel.basicConsume(singleReadingQueueName, false, consumer);
     }
 
+    /**
+     * Register service execution consumer
+     */
+    private void registerServiceExecutionRequestedConsumer() throws IOException {
 
+        Channel channel = connection.createChannel();
+        channel.queueDeclare(serviceExecutionQueueName, false,true,true,null);
+        channel.queueBind(serviceExecutionQueueName, enablerPlatformProxyExchangeName, executeServiceRoutingKey);
+        ServiceExecutionRequestedConsumer consumer = new ServiceExecutionRequestedConsumer(channel,acquisitionManager,rabbitTemplate);
+
+        log.debug("Creating service execution consumer");
+        channel.basicConsume(serviceExecutionQueueName, false, consumer);
+    }
+
+    /**
+     * Register actuator execution consumer
+     */
+    private void registerActuatorExecutionRequestedConsumer() throws IOException {
+
+        Channel channel = connection.createChannel();
+        channel.queueDeclare(actuatorExecutionQueueName, false,true,true,null);
+        channel.queueBind(actuatorExecutionQueueName, enablerPlatformProxyExchangeName, executeActuatorRoutingKey);
+        ActuatorExecutionRequestedConsumer consumer = new ActuatorExecutionRequestedConsumer(channel,acquisitionManager,rabbitTemplate);
+
+        log.debug("Creating actuator execution consumer");
+        channel.basicConsume(actuatorExecutionQueueName, false, consumer);
+    }
 
 
 //    /**
