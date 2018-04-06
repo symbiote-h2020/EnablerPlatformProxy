@@ -102,29 +102,37 @@ public class ServiceManagerTests {
 
         ObjectMapper mapper = new ObjectMapper();
         try {
-            List<ServiceParameter> s = mapper.readValue(result, new TypeReference<List<ServiceParameter>>() {
+            List<Map> s = mapper.readValue(result, new TypeReference<List<Map>>() {
             });
 
             assertNotNull("Deserialised object must not be null", s);
             assertEquals("Size of the deserialized list must be 2", 2, s.size());
-            ServiceParameter s0 = s.get(0);
-            assertNotNull(s0);
-            assertNotNull(s0.getName());
-            assertNotNull(s0.getValue());
-            ServiceParameter s1 = s.get(1);
-            assertNotNull(s1);
-            assertNotNull(s1.getName());
-            assertNotNull(s1.getValue());
-            if (s0.getName().equals(parameter1Name)) {
-                assertEquals(s0.getValue(), parameter1Value);
-                assertEquals(s1.getName(), parameter2Name);
-                assertEquals(s1.getValue(), parameter2Value);
-            } else {
-                assertEquals(s0.getName(), parameter2Name);
-                assertEquals(s0.getValue(), parameter2Value);
-                assertEquals(s1.getName(), parameter1Name);
-                assertEquals(s1.getValue(), parameter1Value);
-            }
+            assertEquals("result must have 2 entry",2,s.size());
+            Map<String,Object> s0 = s.get(0);
+            Map<String,Object> s1 = s.get(1);
+            assertEquals("result1 must have 1 param",1,s0.size());
+            assertEquals("result2 must have 1 param",1,s1.size());
+            Object s0nameFromMap = s0.keySet().iterator().next();
+            assertEquals("Name after deserialise must be the same",parameter1Name,s0nameFromMap);
+            Object s0valueFromMap = s0.get(s0nameFromMap);
+            assertEquals("Value after deserialise must be same",parameter1Value,s0valueFromMap);
+
+            Object s1nameFromMap = s1.keySet().iterator().next();
+            assertEquals("Name after deserialise must be the same",parameter2Name,s1nameFromMap);
+            Object s1valueFromMap = s1.get(s1nameFromMap);
+            assertEquals("Value after deserialise must be same",parameter2Value,s1valueFromMap);
+
+//
+//            if (s0.getName().equals(parameter1Name)) {
+//                assertEquals(s0.getValue(), parameter1Value);
+//                assertEquals(s1.getName(), parameter2Name);
+//                assertEquals(s1.getValue(), parameter2Value);
+//            } else {
+//                assertEquals(s0.getName(), parameter2Name);
+//                assertEquals(s0.getValue(), parameter2Value);
+//                assertEquals(s1.getName(), parameter1Name);
+//                assertEquals(s1.getValue(), parameter1Value);
+//            }
         } catch (IOException e) {
             fail("Could not create objects from created Json");
             e.printStackTrace();
