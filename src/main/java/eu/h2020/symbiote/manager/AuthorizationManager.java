@@ -51,7 +51,7 @@ public class AuthorizationManager {
     @Autowired
     public AuthorizationManager(@Value("${symbiote.enabler.core.username}") String username,
                                 @Value("${symbiote.enabler.core.password}") String password,
-                                @Value("${symbiote.enabler.core.interface.url}") String aamAddress,
+                                @Value("${symbIoTe.core.interface.url}") String aamAddress,
                                 @Value("${enablerPlatformProxy.environment.clientId}") String clientId,
                                 @Value("${enablerPlatformProxy.environment.keystoreName}") String keystoreName,
                                 @Value("${enablerPlatformProxy.environment.keystorePass}") String keystorePass,
