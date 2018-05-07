@@ -36,9 +36,6 @@ public class AuthorizationManagerTests {
         } catch (SecurityHandlerException e) {
             e.printStackTrace();
             fail();
-        } catch (InvalidArgumentsException e) {
-            e.printStackTrace();
-            fail();
         }
     }
 

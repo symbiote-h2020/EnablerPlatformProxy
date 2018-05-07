@@ -132,7 +132,7 @@ public class AcquisitionManager {
 //            Token platformToken = tokenManager.obtainValidPlatformToken(paamAddress);
 //            httpHeaders.set("X-Auth-Token", platformToken.getToken());
 
-            Map<String, String> headers = authorizationManager.generateSecurityHeaders(platformId);
+            Map<String, String> headers = authorizationManager.generateSecurityHeaders();
             for (Map.Entry<String, String> entry : headers.entrySet()) {
                 httpHeaders.add(entry.getKey(), entry.getValue());
             }
@@ -184,7 +184,7 @@ public class AcquisitionManager {
         try {
             String platformId = authorizationManager.getPlatformIdForAAMAddress(paamAddress);
 
-            Map<String, String> headers = authorizationManager.generateSecurityHeaders(platformId);
+            Map<String, String> headers = authorizationManager.generateSecurityHeaders();
             for (Map.Entry<String, String> entry : headers.entrySet()) {
                 httpHeaders.add(entry.getKey(), entry.getValue());
             }
@@ -198,7 +198,8 @@ public class AcquisitionManager {
                     return queryResponse;
                 } else {
                     log.info("Service response from RAP of platform " + platformId + " is NOT valid!");
-                    queryResponse = new ResponseEntity<String>("Service response from RAP of platform " + platformId + " is NOT valid!", HttpStatus.FORBIDDEN);
+                    queryResponse = new ResponseEntity<>("Service response from RAP of platform "
+                            + platformId + " is NOT valid!", HttpStatus.FORBIDDEN);
                 }
             } catch (HttpClientErrorException e) {
                 log.error("Error contacting REST endpoint: " + e.getMessage());
@@ -208,13 +209,13 @@ public class AcquisitionManager {
 
         } catch (ValidationException e) {
             log.error("Error obtaining token for platform " + e.getMessage(), e);
-            queryResponse = new ResponseEntity<String>("Error obtaining token for platform " + e.getMessage(), HttpStatus.UNAUTHORIZED);
+            queryResponse = new ResponseEntity<>("Error obtaining token for platform " + e.getMessage(), HttpStatus.UNAUTHORIZED);
         } catch (SecurityHandlerException e) {
             log.error("Security handler exception occurred: " + e.getMessage(), e);
-            queryResponse = new ResponseEntity<String>("Security handler exception occurred: " + e.getMessage(), HttpStatus.UNAUTHORIZED);
+            queryResponse = new ResponseEntity<>("Security handler exception occurred: " + e.getMessage(), HttpStatus.UNAUTHORIZED);
         } catch (Exception e) {
             log.error("Internal exception occurred: " + e.getMessage(), e);
-            queryResponse = new ResponseEntity<String>("Internal exception occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            queryResponse = new ResponseEntity<>("Internal exception occurred: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
         return queryResponse;
     }
