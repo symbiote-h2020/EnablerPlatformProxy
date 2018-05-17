@@ -101,9 +101,9 @@ public class AcquisitionManager {
         tasks.put(description.getTaskId(), taskTimer);
     }
 
-    public void stopAcquisition(List<String> stopRequest) {
+    public void stopAcquisition(CancelTaskRequest stopRequest) {
         if (stopRequest != null) {
-            for (String taskId : stopRequest) {
+            for (String taskId : stopRequest.getTaskIdList()) {
                 if (!tasks.containsKey(taskId)) {
                     log.warn("Tried to stop task with id " + taskId + " but no task with this id could be found");
                 } else {
@@ -113,6 +113,8 @@ public class AcquisitionManager {
                 }
                 acquisitionTaskDescriptionRepository.delete(taskId);
             }
+        } else {
+            log.error( "Null cancel task request has been send, aborting canceling of the tasks.");
         }
     }
 

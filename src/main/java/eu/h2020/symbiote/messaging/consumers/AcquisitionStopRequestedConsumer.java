@@ -8,6 +8,7 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
+import eu.h2020.symbiote.enabler.messaging.model.CancelTaskRequest;
 import eu.h2020.symbiote.manager.AcquisitionManager;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -45,7 +46,7 @@ public class AcquisitionStopRequestedConsumer extends DefaultConsumer {
         try {
             ObjectMapper mapper = new ObjectMapper();
             //TODO read proper value and handle acq start request
-            List<String> stopRequest = mapper.readValue(msg, new TypeReference<List<String>>() {
+            CancelTaskRequest stopRequest = mapper.readValue(msg, new TypeReference<CancelTaskRequest>() {
             });
 
             acquisitionManager.stopAcquisition(stopRequest);
