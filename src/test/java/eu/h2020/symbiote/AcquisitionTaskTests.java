@@ -87,10 +87,10 @@ public class AcquisitionTaskTests {
             e.printStackTrace();
             fail("Error should not happen in handle delivery");
         }
-        try {
-            ArgumentCaptor<byte[]> argumentByteArray = ArgumentCaptor.forClass(byte[].class);
-            verify(channel, times(1)).basicPublish(anyString(), anyString(), any(), argumentByteArray.capture());
-            assertNotNull(argumentByteArray);
+//        try {
+//            ArgumentCaptor<byte[]> argumentByteArray = ArgumentCaptor.forClass(byte[].class);
+//            verify(channel, times(1)).basicPublish(anyString(), anyString(), any(), argumentByteArray.capture());
+//            assertNotNull(argumentByteArray);
 
             ArgumentCaptor<PlatformProxyAcquisitionStartRequest> argumentStartAcqInfo = ArgumentCaptor.forClass(PlatformProxyAcquisitionStartRequest .class);
             verify(acquisitionManager, times(1)).startAcquisition(argumentStartAcqInfo.capture());
@@ -102,10 +102,10 @@ public class AcquisitionTaskTests {
 //            PlatformProxyAcquisitionStartRequestResponse response = mapper.readValue(argumentByteArray.getValue(), PlatformProxyAcquisitionStartRequestResponse.class);
 //            assertEquals("Task ids must be equal", TASK_ID, response.getTaskId());
 
-        } catch (IOException e) {
-            e.printStackTrace();
-            fail("Mock channel should not have any errors");
-        }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//            fail("Mock channel should not have any errors");
+//        }
     }
 
     @Test
