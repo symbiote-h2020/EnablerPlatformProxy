@@ -50,12 +50,14 @@ public class AcquisitionTask extends TimerTask {
             log.debug("Accessing resources for task " + description.getTaskId() + " ...");
             List<Observation> observations = new ArrayList<>();
             int i = 0;
-            for (PlatformProxyResourceInfo info : description.getResources()) {
-                log.debug("[" + ++i + "] Trying " + info.getAccessURL() + " ...");
+            List<PlatformProxyResourceInfo> resources=description.getResources();
+            for (i=0; i<resources.size(); i++) {
+            	PlatformProxyResourceInfo info=resources.get(i);
+                log.debug("[" + (i+1) + " of "+resources.size()+"] Trying " + info.getAccessURL() + " ...");
 
 //            this.authorizationManager.requestHomeToken();
                 List<Observation> resObs = manager.getObservationForResource(info);
-                log.debug("[" + ++i + "] " + info.getAccessURL() + " got " + resObs.size() + " observations");
+                log.debug("[" + i + "] " + info.getAccessURL() + " got " + resObs.size() + " observations");
                 if (resObs.size() > 0) {
                     StringBuilder sb = new StringBuilder();
                     sb.append("res: ");
@@ -74,16 +76,21 @@ public class AcquisitionTask extends TimerTask {
             }
 
             //3. Create new data appeared event if there is at least one observation
-            if (observations.size() > 0) {
+            // gdb: Sending a "data appeared" message, even if there are zero observations in it.
+            // This allows easier understanding and debugging of fundamental communication.
+            // Experience from operation so far: If no message comes at all, we try to debug communication
+            // If an empty message would come (maybe with a hint) then we would debug search.
+//            if (observations.size() > 0) {
+                log.info("Sending a \"data appeared\" message with "+observations.size()+" entries");
                 EnablerLogicDataAppearedMessage message = new EnablerLogicDataAppearedMessage();
                 message.setTaskId(description.getTaskId());
                 message.setObservations(observations);
                 message.setTimestamp("" + DateTime.now().getMillis());
 
                 this.manager.dataAppeared(message);
-            } else {
-                log.info("Returned 0 observations: skipping informing enabler logic");
-            }
+//            } else {
+//                log.info("Returned 0 observations: skipping informing enabler logic");
+//            }
         } catch( Exception e ) {
             log.error("Unexcepted error occurred when executing scheduled task " + description.getTaskId(), e);
         }
