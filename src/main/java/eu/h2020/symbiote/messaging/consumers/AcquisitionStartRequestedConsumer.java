@@ -48,19 +48,20 @@ public class AcquisitionStartRequestedConsumer extends DefaultConsumer {
 
             acquisitionManager.startAcquisition(acquisitionStartRequest);
 
-            PlatformProxyAcquisitionStartRequestResponse response = new PlatformProxyAcquisitionStartRequestResponse();
-            response.setStatus("OK");
-            response.setTaskId(acquisitionStartRequest.getTaskId());
-
-            byte[] responseBytes = mapper.writeValueAsBytes(response);
-
-            AMQP.BasicProperties replyProps = new AMQP.BasicProperties
-                    .Builder()
-                    .correlationId(properties.getCorrelationId())
-                    .contentType("application/json")
-                    .build();
-            this.getChannel().basicPublish("", properties.getReplyTo(), replyProps, responseBytes);
-            log.debug("-> Message sent back");
+            //Commented responding to the start acqusition task -
+//            PlatformProxyAcquisitionStartRequestResponse response = new PlatformProxyAcquisitionStartRequestResponse();
+//            response.setStatus("OK");
+//            response.setTaskId(acquisitionStartRequest.getTaskId());
+//
+//            byte[] responseBytes = mapper.writeValueAsBytes(response);
+//
+//            AMQP.BasicProperties replyProps = new AMQP.BasicProperties
+//                    .Builder()
+//                    .correlationId(properties.getCorrelationId())
+//                    .contentType("application/json")
+//                    .build();
+//            this.getChannel().basicPublish("", properties.getReplyTo(), replyProps, responseBytes);
+//            log.debug("-> Message sent back");
 
             this.getChannel().basicAck(envelope.getDeliveryTag(), false);
 

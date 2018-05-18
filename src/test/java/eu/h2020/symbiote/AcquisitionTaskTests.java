@@ -13,7 +13,11 @@ import eu.h2020.symbiote.messaging.RabbitManager;
 import eu.h2020.symbiote.messaging.consumers.AcquisitionStartRequestedConsumer;
 import eu.h2020.symbiote.messaging.consumers.AcquisitionStopRequestedConsumer;
 import eu.h2020.symbiote.messaging.consumers.SingleReadingRequestedConsumer;
+import eu.h2020.symbiote.model.AcquisitionStatus;
+import eu.h2020.symbiote.model.AcquisitionTaskDescription;
+import eu.h2020.symbiote.model.cim.*;
 import eu.h2020.symbiote.repository.AcquisitionTaskDescriptionRepository;
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -56,6 +60,9 @@ public class AcquisitionTaskTests {
         repository = Mockito.mock(AcquisitionTaskDescriptionRepository.class);
         rabbitTemplate = Mockito.mock(RabbitTemplate.class);
 
+        DateTime now = DateTime.now();
+        when(acquisitionManager.getObservationForResource(any())).thenReturn(getFakeObservationList(now));
+
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost("localhost");
         factory.setUsername("username");
@@ -65,11 +72,14 @@ public class AcquisitionTaskTests {
     @Test
     public void testStartAcquisitionConsumer() {
         Channel channel = Mockito.mock(Channel.class);
+
+        PlatformProxyAcquisitionStartRequest acquisitionStartRequest = getAcquisitionStartRequest();
+
         AcquisitionStartRequestedConsumer consumer = new AcquisitionStartRequestedConsumer(channel, acquisitionManager);
         Envelope envelope = Mockito.mock(Envelope.class);
         AMQP.BasicProperties properties = new AMQP.BasicProperties();
 
-        PlatformProxyAcquisitionStartRequest acquisitionStartRequest = getAcquisitionStartRequest();
+
         ObjectMapper mapper = new ObjectMapper();
         try {
             consumer.handleDelivery("consumerTag", envelope, properties, mapper.writeValueAsBytes(acquisitionStartRequest));
@@ -77,10 +87,10 @@ public class AcquisitionTaskTests {
             e.printStackTrace();
             fail("Error should not happen in handle delivery");
         }
-        try {
-            ArgumentCaptor<byte[]> argumentByteArray = ArgumentCaptor.forClass(byte[].class);
-            verify(channel, times(1)).basicPublish(anyString(), anyString(), any(), argumentByteArray.capture());
-            assertNotNull(argumentByteArray);
+//        try {
+//            ArgumentCaptor<byte[]> argumentByteArray = ArgumentCaptor.forClass(byte[].class);
+//            verify(channel, times(1)).basicPublish(anyString(), anyString(), any(), argumentByteArray.capture());
+//            assertNotNull(argumentByteArray);
 
             ArgumentCaptor<PlatformProxyAcquisitionStartRequest> argumentStartAcqInfo = ArgumentCaptor.forClass(PlatformProxyAcquisitionStartRequest .class);
             verify(acquisitionManager, times(1)).startAcquisition(argumentStartAcqInfo.capture());
@@ -88,14 +98,14 @@ public class AcquisitionTaskTests {
             assertEquals("Task id of the internal call must be equal", TASK_ID, startReq.getTaskId());
             assertEquals("Logic name of the internal call must be equal", ENABLER_LOGIC_1, startReq.getEnablerLogicName());
 
-            //Try to deserialize and check values
-            PlatformProxyAcquisitionStartRequestResponse response = mapper.readValue(argumentByteArray.getValue(), PlatformProxyAcquisitionStartRequestResponse.class);
-            assertEquals("Task ids must be equal", TASK_ID, response.getTaskId());
+            //Try to deserialize and check values - disabling since response has been removed
+//            PlatformProxyAcquisitionStartRequestResponse response = mapper.readValue(argumentByteArray.getValue(), PlatformProxyAcquisitionStartRequestResponse.class);
+//            assertEquals("Task ids must be equal", TASK_ID, response.getTaskId());
 
-        } catch (IOException e) {
-            e.printStackTrace();
-            fail("Mock channel should not have any errors");
-        }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//            fail("Mock channel should not have any errors");
+//        }
     }
 
     @Test
@@ -105,7 +115,9 @@ public class AcquisitionTaskTests {
         Envelope envelope = Mockito.mock(Envelope.class);
         AMQP.BasicProperties properties = new AMQP.BasicProperties();
 
-        List<String> acquisitionStopRequest = getAcquisitionStopRequest();
+        List<String> taskIds = getAcquisitionStopRequest();
+        CancelTaskRequest acquisitionStopRequest = new CancelTaskRequest();
+        acquisitionStopRequest.setTaskIdList(taskIds);
         ObjectMapper mapper = new ObjectMapper();
         try {
             consumer.handleDelivery("consumerTag", envelope, properties, mapper.writeValueAsBytes(acquisitionStopRequest));
@@ -118,11 +130,11 @@ public class AcquisitionTaskTests {
             verify(channel, times(1)).basicPublish(anyString(), anyString(), any(), argumentByteArray.capture());
             assertNotNull(argumentByteArray);
 
-            ArgumentCaptor<List<String>> argumentStopAcqInfo = ArgumentCaptor.forClass((Class)List.class);
+            ArgumentCaptor<CancelTaskRequest> argumentStopAcqInfo = ArgumentCaptor.forClass((Class)CancelTaskRequest.class);
             verify(acquisitionManager, times(1)).stopAcquisition(argumentStopAcqInfo.capture());
-            List<String> stopReq = argumentStopAcqInfo.getValue();
-            assertEquals("Should only call stop for one task", 1, stopReq.size());
-            assertEquals("Task id of the internal call must be equal", TASK_ID, stopReq.get(0));
+            CancelTaskRequest stopReq = argumentStopAcqInfo.getValue();
+            assertEquals("Should only call stop for one task", 1, stopReq.getTaskIdList().size());
+            assertEquals("Task id of the internal call must be equal", TASK_ID, stopReq.getTaskIdList().get(0));
 
             //Try to deserialize and check values
             String response = mapper.readValue(argumentByteArray.getValue(), String.class);
@@ -175,8 +187,46 @@ public class AcquisitionTaskTests {
         Optional<String> result = PlatformProxyUtil.generateRestSensorEndpoint(address1);
         assertTrue(result.isPresent());
         assertEquals("Addresses must be equal",address2, result.get());
-
     }
+
+
+    @Test
+    public void testAcquisitionTaskDescriptionBean() {
+        AcquisitionTaskDescription taskDescription1 = new AcquisitionTaskDescription();
+        AcquisitionTaskDescription taskDescription2 = new AcquisitionTaskDescription();
+        AcquisitionTaskDescription taskDescription3 = new AcquisitionTaskDescription();
+        AcquisitionStatus status = AcquisitionStatus.STARTED;
+        DateTime dateTime = DateTime.now();
+        Long interval = Long.valueOf(1100l);
+        String taskId = "12345678";
+        PlatformProxyResourceInfo res1 = new PlatformProxyResourceInfo();
+        res1.setResourceId("res1");
+        res1.setAccessURL("http://www.example.com/res1");
+        List<PlatformProxyResourceInfo> resources = Arrays.asList(res1);
+
+        taskDescription1.setStatus(status);
+        taskDescription1.setStartTime(dateTime);
+        taskDescription1.setInterval(interval);
+        taskDescription1.setTaskId(taskId);
+        taskDescription1.setResources(resources);
+
+        taskDescription2.setStatus(status);
+        taskDescription2.setStartTime(dateTime);
+        taskDescription2.setInterval(interval);
+        taskDescription2.setTaskId(taskId);
+        taskDescription2.setResources(resources);
+
+        taskDescription3.setStatus(status);
+        taskDescription3.setStartTime(dateTime);
+        taskDescription3.setInterval(interval);
+        taskDescription3.setTaskId("new id");
+        taskDescription3.setResources(resources);
+
+        assertTrue(taskDescription1.equals(taskDescription2));
+        assertFalse(taskDescription1.equals(taskDescription3));
+        assertEquals(taskDescription1.hashCode(),taskDescription2.hashCode());
+    }
+
 
     private PlatformProxyTaskInfo getTestTaskInfo() {
         PlatformProxyTaskInfo info = new PlatformProxyTaskInfo();
@@ -203,6 +253,17 @@ public class AcquisitionTaskTests {
         request.setResources(resources);
         return request;
     }
+
+    private List<Observation> getFakeObservationList( DateTime time ) {
+        ObservationValue obsValue1 = new ObservationValue("15",new Property("p1","p1iri",Arrays.asList("")),new UnitOfMeasurement("p","p","pIri",Arrays.asList("")));
+        List<ObservationValue> observations = Arrays.asList(obsValue1);
+        Observation obs1 = new Observation(RESOURCE_ID,new WGS84Location(15.0d,100.0d,15.0d,"loc1",Arrays.asList("loc1")),time.toString(),"10",observations);
+        List<Observation> values = Arrays.asList(obs1);
+
+
+        return values;
+    }
+
 
     private List<String> getAcquisitionStopRequest() {
         return Arrays.asList(TASK_ID);

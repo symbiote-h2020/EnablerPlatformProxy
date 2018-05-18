@@ -7,7 +7,8 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+ 		classpath "io.spring.gradle:dependency-management-plugin:1.0.0.RELEASE"
+   		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
         classpath group: 'com.cinnober.gradle', name: 'semver-git', version: '2.2.1'
         classpath 'org.owasp:dependency-check-gradle:1.4.5.1'
     }
@@ -27,15 +28,17 @@ apply plugin: 'idea'
 
 // publishing
 apply plugin: 'com.cinnober.gradle.semver-git'
+apply plugin: 'maven-publish'
 
 // XXX please change with your commits according to http://semver.org/
-project.version = '0.2.0'
+project.group = 'eu.h2020.symbiote'
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 repositories {
     mavenCentral()
+    mavenLocal()
     maven { 
         url "https://jitpack.io" 
     }
@@ -69,7 +72,7 @@ dependencies {
         4) never commit build.gradle which has project dependencies active as it will break CI builds
     */
     //    compile project(':SymbIoTeLibraries')
-    compile('com.github.symbiote-h2020:SymbIoTeLibraries:5.11+') { changing = true }
+    compile('com.github.symbiote-h2020:SymbIoTeLibraries:5.13+') { changing = true }
 
     // Spring
     compile('org.springframework.cloud:spring-cloud-starter')
@@ -87,12 +90,53 @@ dependencies {
     testCompile('org.springframework.boot:spring-boot-starter-test')
 }
 
-// code quality below
+// publication
+
+jar {
+       baseName = 'EnablerPlatformProxy'
+       version = project.version
+}
+
+bootRepackage {
+    classifier = 'run'
+}
+
+
 task generateJavaDocs(type: Javadoc) {
     source = sourceSets.main.allJava
     destinationDir = reporting.file("javadocs")
 }
 
+task javadocJar(type: Jar, dependsOn: generateJavaDocs) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+task sourceJar(type: Jar) {
+    from sourceSets.main.allJava
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = project.group
+            version = project.version
+            from components.java
+
+            artifact sourceJar {
+                classifier "sources"
+            }
+
+            artifact javadocJar
+
+            artifact(file("$libsDir/$project.name-$project.version-${bootRepackage.classifier}.jar")) {
+                classifier "run"
+            }
+        }
+    }
+}
+
+// code quality below
 // jacoco configuration section
 jacoco {
     toolVersion = "0.7.9"

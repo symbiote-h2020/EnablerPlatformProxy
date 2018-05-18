@@ -1,5 +1,6 @@
 package eu.h2020.symbiote;
 
+import eu.h2020.symbiote.enabler.messaging.model.CancelTaskRequest;
 import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyAcquisitionStartRequest;
 import eu.h2020.symbiote.enabler.messaging.model.PlatformProxyResourceInfo;
 import eu.h2020.symbiote.manager.AcquisitionManager;
@@ -77,8 +78,10 @@ public class EnablerPlatformProxyTests {
         manager.startAcquisition(createAcquisitionStartRequest());
 
         List<String> tasksToStop = Arrays.asList("task1");
+        CancelTaskRequest request = new CancelTaskRequest();
+        request.setTaskIdList(tasksToStop);
 
-        manager.stopAcquisition(tasksToStop);
+        manager.stopAcquisition(request);
         verify(repository).delete("task1");
     }
 
