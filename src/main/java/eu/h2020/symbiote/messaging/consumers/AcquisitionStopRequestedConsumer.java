@@ -15,6 +15,13 @@ import org.apache.commons.logging.LogFactory;
 import java.io.IOException;
 import java.util.List;
 
+
+
+import eu.h2020.symbiote.enabler.messaging.model.CancelTaskRequest;
+
+
+
+
 /**
  * Consumer of the acquisition stop request.
  *
@@ -45,10 +52,10 @@ public class AcquisitionStopRequestedConsumer extends DefaultConsumer {
         try {
             ObjectMapper mapper = new ObjectMapper();
             //TODO read proper value and handle acq start request
-            List<String> stopRequest = mapper.readValue(msg, new TypeReference<List<String>>() {
+            CancelTaskRequest cancelRequest = mapper.readValue(msg, new TypeReference<CancelTaskRequest>() {
             });
 
-            acquisitionManager.stopAcquisition(stopRequest);
+            acquisitionManager.stopAcquisition(cancelRequest.getTaskIdList());
 
             log.debug( "Sending response to the sender");
 
