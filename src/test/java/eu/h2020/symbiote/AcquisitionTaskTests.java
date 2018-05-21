@@ -36,14 +36,12 @@ import java.util.Optional;
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
+import static eu.h2020.symbiote.StaticTestConfigs.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class AcquisitionTaskTests {
 
-    public static final String RESOURCE_ID = "resource1";
-    public static final String RESOURCE_URL = "http://someurl";
-    public static final String TASK_ID = "1";
-    public static final String ENABLER_LOGIC_1 = "EnablerLogic1";
+
     RabbitManager rabbitManager;
     RestTemplate restTemplate;
     AuthorizationManager authorizationManager;
@@ -225,48 +223,6 @@ public class AcquisitionTaskTests {
         assertTrue(taskDescription1.equals(taskDescription2));
         assertFalse(taskDescription1.equals(taskDescription3));
         assertEquals(taskDescription1.hashCode(),taskDescription2.hashCode());
-    }
-
-
-    private PlatformProxyTaskInfo getTestTaskInfo() {
-        PlatformProxyTaskInfo info = new PlatformProxyTaskInfo();
-        info.setQueryInterval_ms(-1l);
-        info.setEnablerLogicName("EL");
-        PlatformProxyResourceInfo resDesc = new PlatformProxyResourceInfo();
-        resDesc.setAccessURL(RESOURCE_URL);
-        resDesc.setResourceId(RESOURCE_ID);
-        info.setResources(Arrays.asList(resDesc));
-        info.setTaskId(TASK_ID);
-
-        return info;
-    }
-
-    private PlatformProxyAcquisitionStartRequest getAcquisitionStartRequest() {
-        PlatformProxyAcquisitionStartRequest request = new PlatformProxyAcquisitionStartRequest();
-        request.setTaskId(TASK_ID);
-        request.setEnablerLogicName(ENABLER_LOGIC_1);
-        request.setQueryInterval_ms(Long.valueOf(10000l));
-        PlatformProxyResourceInfo resDesc = new PlatformProxyResourceInfo();
-        resDesc.setAccessURL(RESOURCE_URL);
-        resDesc.setResourceId(RESOURCE_ID);
-        List<PlatformProxyResourceInfo> resources = Arrays.asList(resDesc);
-        request.setResources(resources);
-        return request;
-    }
-
-    private List<Observation> getFakeObservationList( DateTime time ) {
-        ObservationValue obsValue1 = new ObservationValue("15",new Property("p1","p1iri",Arrays.asList("")),new UnitOfMeasurement("p","p","pIri",Arrays.asList("")));
-        List<ObservationValue> observations = Arrays.asList(obsValue1);
-        Observation obs1 = new Observation(RESOURCE_ID,new WGS84Location(15.0d,100.0d,15.0d,"loc1",Arrays.asList("loc1")),time.toString(),"10",observations);
-        List<Observation> values = Arrays.asList(obs1);
-
-
-        return values;
-    }
-
-
-    private List<String> getAcquisitionStopRequest() {
-        return Arrays.asList(TASK_ID);
     }
 
 }

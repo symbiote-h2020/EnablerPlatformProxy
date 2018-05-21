@@ -82,7 +82,7 @@ public class AuthorizationManager {
      * @return Map containing security HTTP headers.
      * @throws SecurityHandlerException if there is a problem on creating the security request
      */
-    Map<String, String> generateSecurityHeaders() throws SecurityHandlerException {
+    public Map<String, String> generateSecurityHeaders() throws SecurityHandlerException {
 
         if (securityEnabled) {
             try {
@@ -100,7 +100,7 @@ public class AuthorizationManager {
         }
     }
 
-    String getPlatformIdForAAMAddress(String paamAddress) throws Exception {
+    public String getPlatformIdForAAMAddress(String paamAddress) throws Exception {
         Map<String, AAM> availableAAMs = componentSecurityHandler.getSecurityHandler().getAvailableAAMs();
         List<String> platformIds = availableAAMs.values().stream().filter(aam -> aam.getAamAddress().equals(paamAddress))
                 .map(AAM::getAamInstanceId).collect(Collectors.toList());
@@ -110,7 +110,7 @@ public class AuthorizationManager {
         return platformIds.get(0);
     }
 
-    boolean verifyServiceResponse(HttpHeaders httpHeaders, String componentId, String platformId) {
+    public boolean verifyServiceResponse(HttpHeaders httpHeaders, String componentId, String platformId) {
         if (securityEnabled) {
             String serviceResponse = null;
 

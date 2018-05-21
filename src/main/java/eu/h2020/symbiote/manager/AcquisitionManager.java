@@ -327,27 +327,6 @@ public class AcquisitionManager {
         String result = null;
 
         if (parameters != null && parameters.size() > 0) {
-//            StringBuilder sb = new StringBuilder();
-//            sb.append("[");
-//            Iterator<ServiceParameter> iterator = parameters.iterator();
-//            while( iterator.hasNext() ) {
-//                ServiceParameter next = iterator.next();
-//                try {
-//                    mapper.writewriteValueAsString(next.getValue());
-//                } catch (JsonProcessingException e) {
-//                    e.printStackTrace();
-//                }
-//                sb.append("{\"");
-//                sb.append(next.getName());
-//                sb.append("\":\"");
-//                sb.append(next.getValue());
-//                sb.append("\"}");
-//                if( iterator.hasNext() ) {
-//                    sb.append(",");
-//                }
-//            }
-//            sb.append("]");
-//            result = sb.toString();
             //Using object mapper
             ObjectMapper objectMapper = new ObjectMapper();
             List<HashMap<String, Object>> listOfMap = new ArrayList<>();

@@ -34,6 +34,8 @@ import static org.junit.Assert.*;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
+import static eu.h2020.symbiote.StaticTestConfigs.*;
+
 /**
  * Created by Szymon Mueller on 03/04/2018.
  */
@@ -41,12 +43,7 @@ import static org.mockito.Mockito.*;
 @TestConfiguration()
 public class ServiceManagerTests {
 
-    public static final String ACTUATOR_TASK_1 = "actuatorTask1";
-    public static final String E_LOGIC = "eLogic";
-    public static final String CAP_1 = "cap1";
-    public static final String PARAM_1 = "param1";
-    public static final String PARAM_1_VALUE = "param1Value";
-    public static final String SERVICE_TASK_1 = "serviceTask1";
+
 
     AcquisitionManager manager;
 
@@ -57,35 +54,7 @@ public class ServiceManagerTests {
     RabbitTemplate rabbitTemplate;
     AcquisitionTaskDescriptionRepository repository;
 
-    static final ServiceParameter parameter1;
-    static final String parameter1Name = "param1";
-    static final String parameter1Value = "val1";
-    static final ServiceParameter parameter2;
-    static final String parameter2Name = "param2";
-    static final String parameter2Value = "val2";
 
-    static final ServiceParameter booleanParam;
-    static final String booleanParamName = "booleanParam";
-    static final Boolean booleanParamValue = Boolean.TRUE;
-
-    static final ServiceParameter doubleParam;
-    static final String doubleParamName = "floatParam";
-    static final Double doubleParamValue = new Double(5.0d);
-
-    static final ServiceParameter arrayParam;
-    static final String arrayParamName = "floatParam";
-    static final List<Object> arrayParamValue;
-
-    static {
-        parameter1 = new ServiceParameter(parameter1Name, parameter1Value);
-        parameter2 = new ServiceParameter(parameter2Name, parameter2Value);
-
-        booleanParam = new ServiceParameter(booleanParamName, booleanParamValue);
-        doubleParam = new ServiceParameter(doubleParamName, doubleParamValue);
-
-        arrayParamValue = Arrays.asList(new String("1"), new String("2"));
-        arrayParam = new ServiceParameter(arrayParamName, arrayParamValue);
-    }
 
     @Before
     public void setUp() {
