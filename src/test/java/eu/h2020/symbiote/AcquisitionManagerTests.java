@@ -136,8 +136,8 @@ public class AcquisitionManagerTests {
 
 
     private void initBehaviour() throws SecurityHandlerException {
-        when(authorizationManager.getPaamAddress(anyString())).thenReturn(PAAM_ADDRESS);
-        when(authorizationManager.getPaamAddress(eq(PAAM_ADDRESS))).thenReturn(PLATFORM_ID);
+//        when(authorizationManager.getPaamAddress(anyString())).thenReturn(PAAM_ADDRESS);
+//        when(authorizationManager.getPaamAddress(eq(PAAM_ADDRESS))).thenReturn(PLATFORM_ID);
         when(authorizationManager.generateSecurityHeaders()).thenReturn(new HashMap<String,String>());
     }
 

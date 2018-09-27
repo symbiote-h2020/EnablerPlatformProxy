@@ -100,14 +100,20 @@ public class AuthorizationManager {
         }
     }
 
-    public String getPlatformIdForAAMAddress(String paamAddress) throws Exception {
-        Map<String, AAM> availableAAMs = componentSecurityHandler.getSecurityHandler().getAvailableAAMs();
-        List<String> platformIds = availableAAMs.values().stream().filter(aam -> aam.getAamAddress().equals(paamAddress))
-                .map(AAM::getAamInstanceId).collect(Collectors.toList());
-        if( platformIds.size() != 1 ) {
-            throw new Exception("Could not find platform with specified aam address " + paamAddress );
+    public String getPlatformIdForAAMAddress(String accessUrl) throws Exception {
+        int relevantIndex = accessUrl.indexOf("/rap/");
+        if( relevantIndex > 0 ) {
+            final String baseCloudUrl = accessUrl.substring(0,relevantIndex) ;
+            Map<String, AAM> availableAAMs = componentSecurityHandler.getSecurityHandler().getAvailableAAMs();
+            List<String> platformIds = availableAAMs.values().stream().filter(aam -> aam.getAamAddress().startsWith(baseCloudUrl))
+                    .map(AAM::getAamInstanceId).collect(Collectors.toList());
+            if( platformIds.size() != 1 ) {
+                throw new Exception("Could not find platform with specified aam address " + platformIds.size() + " || " + baseCloudUrl  );
+            }
+            return platformIds.get(0);
+        } else {
+            throw new Exception("Access url is not correct - missing /rap/ part in the url " + accessUrl);
         }
-        return platformIds.get(0);
     }
 
     public boolean verifyServiceResponse(HttpHeaders httpHeaders, String componentId, String platformId) {
@@ -146,12 +152,12 @@ public class AuthorizationManager {
 
     }
 
-    public String getPaamAddress( String accessUrl ) {
-        String result = null;
-        int relevantIndex = accessUrl.indexOf("/rap/");
-        if( relevantIndex > 0 ) {
-            result = accessUrl.substring(0,relevantIndex) + "/paam";
-        }
-        return result;
-    }
+//    public String getPaamAddress( String accessUrl ) {
+//        String result = null;
+//        int relevantIndex = accessUrl.indexOf("/rap/");
+//        if( relevantIndex > 0 ) {
+//            result = accessUrl.substring(0,relevantIndex) + "/paam";
+//        }
+//        return result;
+//    }
 }

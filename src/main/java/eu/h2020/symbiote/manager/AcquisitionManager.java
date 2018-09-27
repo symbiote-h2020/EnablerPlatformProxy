@@ -128,9 +128,9 @@ public class AcquisitionManager {
 //        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
 
         //TODO fix - accessUrl check if not null
-        String paamAddress = authorizationManager.getPaamAddress(info.getAccessURL());
+//        String paamAddress = authorizationManager.getPaamAddress(info.getAccessURL());
         try {
-            String platformId = authorizationManager.getPlatformIdForAAMAddress(paamAddress);
+            String platformId = authorizationManager.getPlatformIdForAAMAddress(info.getAccessURL());
 //            Token platformToken = tokenManager.obtainValidPlatformToken(paamAddress);
 //            httpHeaders.set("X-Auth-Token", platformToken.getToken());
 
@@ -182,9 +182,9 @@ public class AcquisitionManager {
 //        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
         ResponseEntity<?> queryResponse = null;
         //TODO fix - accessUrl check if not null
-        String paamAddress = authorizationManager.getPaamAddress(url);
+//        String paamAddress = authorizationManager.getPaamAddress(url);
         try {
-            String platformId = authorizationManager.getPlatformIdForAAMAddress(paamAddress);
+            String platformId = authorizationManager.getPlatformIdForAAMAddress(url);
 
             Map<String, String> headers = authorizationManager.generateSecurityHeaders();
             for (Map.Entry<String, String> entry : headers.entrySet()) {
