@@ -2,6 +2,7 @@ package eu.h2020.symbiote.manager;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import eu.h2020.symbiote.security.ComponentSecurityHandlerFactory;
+import eu.h2020.symbiote.security.commons.ComponentIdentifiers;
 import eu.h2020.symbiote.security.commons.SecurityConstants;
 import eu.h2020.symbiote.security.commons.exceptions.custom.SecurityHandlerException;
 import eu.h2020.symbiote.security.communication.payloads.AAM;
@@ -45,7 +46,7 @@ public class AuthorizationManager {
     public AuthorizationManager(@Value("${symbIoTe.component.username}") String componentOwnerName,
                                 @Value("${symbIoTe.component.password}") String componentOwnerPassword,
                                 @Value("${symbIoTe.localaam.url}") String aamAddress,
-                                @Value("${symbIoTe.component.clientId}") String clientId,
+                                @Value("${platform.id}") String platformId,
                                 @Value("${symbIoTe.component.keystore.path}") String keystoreName,
                                 @Value("${symbIoTe.component.keystore.password}") String keystorePass,
                                 @Value("${symbIoTe.aam.integration}") Boolean securityEnabled)
@@ -60,8 +61,8 @@ public class AuthorizationManager {
         Assert.notNull(aamAddress,"aamAddress can not be null!");
         this.aamAddress = aamAddress;
 
-        Assert.notNull(clientId,"clientId can not be null!");
-        this.clientId = clientId;
+        Assert.notNull(platformId,"platformId can not be null!");
+        this.clientId = ComponentIdentifiers.ENABLER_PLATFORM_PROXY + "@" + platformId;
 
         Assert.notNull(keystoreName,"keystoreName can not be null!");
         this.keystoreName = keystoreName;
