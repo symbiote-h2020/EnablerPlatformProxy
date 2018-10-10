@@ -15,6 +15,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,9 +37,11 @@ public class AuthorizationManager {
     private String componentOwnerPassword;
     private String aamAddress;
     private String clientId;
+    private String platformId;
     private String keystoreName;
     private String keystorePass;
     private Boolean securityEnabled;
+    private String interworkingIntefaceUrl;
 
     private IComponentSecurityHandler componentSecurityHandler;
 
@@ -49,6 +52,7 @@ public class AuthorizationManager {
                                 @Value("${platform.id}") String platformId,
                                 @Value("${symbIoTe.component.keystore.path}") String keystoreName,
                                 @Value("${symbIoTe.component.keystore.password}") String keystorePass,
+                                @Value("${symbIoTe.interworking.interface.url}") String interworkingIntefaceUrl,
                                 @Value("${symbIoTe.aam.integration}") Boolean securityEnabled)
             throws SecurityHandlerException {
 
@@ -62,6 +66,7 @@ public class AuthorizationManager {
         this.aamAddress = aamAddress;
 
         Assert.notNull(platformId,"platformId can not be null!");
+        this.platformId = platformId;
         this.clientId = ComponentIdentifiers.ENABLER_PLATFORM_PROXY + "@" + platformId;
 
         Assert.notNull(keystoreName,"keystoreName can not be null!");
@@ -69,6 +74,9 @@ public class AuthorizationManager {
 
         Assert.notNull(keystorePass,"keystorePass can not be null!");
         this.keystorePass = keystorePass;
+
+        Assert.notNull(interworkingIntefaceUrl,"interworkingIntefaceUrl can not be null!");
+        this.interworkingIntefaceUrl = interworkingIntefaceUrl;
 
         Assert.notNull(securityEnabled,"securityEnabled can not be null!");
         this.securityEnabled = securityEnabled;
@@ -106,8 +114,8 @@ public class AuthorizationManager {
         if( relevantIndex > 0 ) {
             final String baseCloudUrl = accessUrl.substring(0,relevantIndex) ;
             Map<String, AAM> availableAAMs = componentSecurityHandler.getSecurityHandler().getAvailableAAMs();
-            List<String> platformIds = availableAAMs.values().stream().filter(aam -> aam.getAamAddress().startsWith(baseCloudUrl))
-                    .map(AAM::getAamInstanceId).collect(Collectors.toList());
+            List<String> platformIds = filterAAMAddresses(baseCloudUrl, availableAAMs);
+
             if( platformIds.size() != 1 ) {
                 throw new Exception("Could not find platform with specified aam address " + platformIds.size() + " || " + baseCloudUrl  );
             }
@@ -153,12 +161,14 @@ public class AuthorizationManager {
 
     }
 
-//    public String getPaamAddress( String accessUrl ) {
-//        String result = null;
-//        int relevantIndex = accessUrl.indexOf("/rap/");
-//        if( relevantIndex > 0 ) {
-//            result = accessUrl.substring(0,relevantIndex) + "/paam";
-//        }
-//        return result;
-//    }
+    private List<String> filterAAMAddresses(String baseCloudUrl, Map<String, AAM> availableAAMs) {
+
+        if (baseCloudUrl.equals(interworkingIntefaceUrl)) {
+            log.debug("Accessing own resources");
+            return Collections.singletonList(platformId);
+        }
+
+        return availableAAMs.values().stream().filter(aam -> aam.getAamAddress().startsWith(baseCloudUrl))
+                .map(AAM::getAamInstanceId).collect(Collectors.toList());
+    }
 }
