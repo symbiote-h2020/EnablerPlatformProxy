@@ -65,12 +65,33 @@ public class ActuatorExecutionRequestedConsumer extends DefaultConsumer {
                     });
 
             log.debug("-> Message sent back");
-            this.getChannel().basicAck(envelope.getDeliveryTag(), false);
 
         } catch( JsonParseException | JsonMappingException e ) {
-            log.error("Error occurred when parsing Resource object JSON: " + msg, e);
+            log.error("Error occurred when parsing Resource object JSON: " + e.getMessage(), e);
+            ServiceExecutionTaskResponse serviceExecutionTaskResponse = new ServiceExecutionTaskResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Error occurred when parsing Resource object JSON: " + e.getMessage());
+            rabbitTemplate.convertAndSend(properties.getReplyTo(), serviceExecutionTaskResponse,
+                    m -> {
+                        m.getMessageProperties().setCorrelationId(properties.getCorrelationId());
+                        return m;
+                    });
+
         } catch( IOException e ) {
-            log.error("I/O Exception occurred when parsing Resource object" , e);
+            log.error("I/O Exception occurred when parsing Resource object " + e.getMessage() , e);
+            ServiceExecutionTaskResponse serviceExecutionTaskResponse = new ServiceExecutionTaskResponse(HttpStatus.INTERNAL_SERVER_ERROR, "I/O Exception occurred when parsing Resource object " + e.getMessage());
+            rabbitTemplate.convertAndSend(properties.getReplyTo(), serviceExecutionTaskResponse,
+                    m -> {
+                        m.getMessageProperties().setCorrelationId(properties.getCorrelationId());
+                        return m;
+                    });
+        } catch( Exception e ) {
+            log.error("Runtime exception occurred when parsing Resource object " + e.getMessage() , e);
+            ServiceExecutionTaskResponse serviceExecutionTaskResponse = new ServiceExecutionTaskResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Runtime exception occurred when parsing Resource object " + e.getMessage());
+            rabbitTemplate.convertAndSend(properties.getReplyTo(), serviceExecutionTaskResponse,
+                    m -> {
+                        m.getMessageProperties().setCorrelationId(properties.getCorrelationId());
+                        return m;
+                    });
         }
+        this.getChannel().basicAck(envelope.getDeliveryTag(), false);
     }
 }

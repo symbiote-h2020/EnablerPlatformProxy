@@ -82,12 +82,15 @@ public class SingleReadingRequestedConsumer extends DefaultConsumer {
                     });
 
             log.debug("-> Message sent back");
-            this.getChannel().basicAck(envelope.getDeliveryTag(), false);
+
 
         } catch( JsonParseException | JsonMappingException e ) {
-            log.error("Error occurred when parsing Resource object JSON: " + msg, e);
+            log.error("Error occurred when parsing Resource object JSON: " + e.getMessage(), e);
         } catch( IOException e ) {
-            log.error("I/O Exception occurred when parsing Resource object" , e);
+            log.error("I/O Exception occurred when parsing Resource object: " + e.getMessage() , e);
+        } catch( Exception e ) {
+            log.error("Generic error occurred " + e.getMessage(), e);
         }
+        this.getChannel().basicAck(envelope.getDeliveryTag(), false);
     }
 }

@@ -48,10 +48,11 @@ public class AcquisitionStopRequestedConsumer extends DefaultConsumer {
     public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
         String msg = new String(body);
         log.debug( "Consume acquisition stop requested message: " + msg );
+        ObjectMapper mapper = new ObjectMapper();
 
         //Try to parse the message
         try {
-            ObjectMapper mapper = new ObjectMapper();
+
             //TODO read proper value and handle acq start request
 
             CancelTaskRequest cancelRequest = mapper.readValue(msg, new TypeReference<CancelTaskRequest>() {});
@@ -69,12 +70,28 @@ public class AcquisitionStopRequestedConsumer extends DefaultConsumer {
             this.getChannel().basicPublish("", properties.getReplyTo(), replyProps, responseBytes);
             log.debug("-> Message sent back");
 
-            this.getChannel().basicAck(envelope.getDeliveryTag(), false);
-
         } catch( JsonParseException | JsonMappingException e ) {
             log.error("Error occurred when parsing Resource object JSON: " + msg, e);
+            byte[] responseBytes = mapper.writeValueAsBytes("Response");
+
+            AMQP.BasicProperties replyProps = new AMQP.BasicProperties
+                    .Builder()
+                    .correlationId(properties.getCorrelationId())
+                    .build();
+            this.getChannel().basicPublish("", properties.getReplyTo(), replyProps, responseBytes);
+            log.debug("-> Message sent back");
         } catch( IOException e ) {
             log.error("I/O Exception occurred when parsing Resource object" , e);
+            byte[] responseBytes = mapper.writeValueAsBytes("Response");
+
+            AMQP.BasicProperties replyProps = new AMQP.BasicProperties
+                    .Builder()
+                    .correlationId(properties.getCorrelationId())
+                    .build();
+            this.getChannel().basicPublish("", properties.getReplyTo(), replyProps, responseBytes);
+            log.debug("-> Message sent back");
         }
+
+        this.getChannel().basicAck(envelope.getDeliveryTag(), false);
     }
 }

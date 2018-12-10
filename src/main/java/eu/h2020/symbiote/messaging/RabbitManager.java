@@ -17,6 +17,8 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PreDestroy;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -37,7 +39,8 @@ public class RabbitManager {
     private String rabbitUsername;
     @Value("${rabbit.password}")
     private String rabbitPassword;
-
+    @Value("${spring.rabbitmq.template.reply-timeout}")
+    private Integer rabbitMessageTimeout;
 
     @Value("${rabbit.exchange.enablerLogic.name}")
     private String enablerLogicExchangeName;
@@ -80,6 +83,8 @@ public class RabbitManager {
     private Connection connection;
     private RabbitTemplate rabbitTemplate;
 
+    private Map<String,Object> queueArgs;
+
     @Autowired
     public RabbitManager(@Lazy AcquisitionManager acquisitionManager,
                          RabbitTemplate rabbitTemplate ) {
@@ -111,6 +116,8 @@ public class RabbitManager {
     public void init() {
         Channel channel = null;
 
+        queueArgs = new HashMap<>();
+        queueArgs.put("x-message-ttl", rabbitMessageTimeout);
         try {
             getConnection();
         } catch (IOException e) {
@@ -212,7 +219,7 @@ public class RabbitManager {
     private void registerAcquisitionStartRequestedConsumer() throws IOException {
 
         Channel channel = connection.createChannel();
-        channel.queueDeclare(startAcquisitionQueueName,false,true,true,null);
+        channel.queueDeclare(startAcquisitionQueueName,false,true,true,queueArgs);
         channel.queueBind(startAcquisitionQueueName, enablerPlatformProxyExchangeName, acquisitionStartRequestedRoutingKey);
         AcquisitionStartRequestedConsumer consumer = new AcquisitionStartRequestedConsumer(channel,acquisitionManager);
 
@@ -226,7 +233,7 @@ public class RabbitManager {
     private void registerAcquisitionStopRequestedConsumer() throws IOException {
 
         Channel channel = connection.createChannel();
-        channel.queueDeclare(stopAcquisitionQueueName, false,true,true,null);
+        channel.queueDeclare(stopAcquisitionQueueName, false,true,true,queueArgs);
         channel.queueBind(stopAcquisitionQueueName, enablerPlatformProxyExchangeName, acquisitionStopRequestedRoutingKey);
         AcquisitionStopRequestedConsumer consumer = new AcquisitionStopRequestedConsumer(channel,acquisitionManager);
 
@@ -240,7 +247,7 @@ public class RabbitManager {
     private void registerSingleReadingRequestedConsumer() throws IOException {
 
         Channel channel = connection.createChannel();
-        channel.queueDeclare(singleReadingQueueName, false,true,true,null);
+        channel.queueDeclare(singleReadingQueueName, false,true,true,queueArgs);
         channel.queueBind(singleReadingQueueName, enablerPlatformProxyExchangeName, singleReadingRequestedRoutingQueue);
         SingleReadingRequestedConsumer consumer = new SingleReadingRequestedConsumer(channel,acquisitionManager,rabbitTemplate);
 
@@ -254,7 +261,7 @@ public class RabbitManager {
     private void registerServiceExecutionRequestedConsumer() throws IOException {
 
         Channel channel = connection.createChannel();
-        channel.queueDeclare(serviceExecutionQueueName, false,true,true,null);
+        channel.queueDeclare(serviceExecutionQueueName, false,true,true,queueArgs);
         channel.queueBind(serviceExecutionQueueName, enablerPlatformProxyExchangeName, executeServiceRoutingKey);
         ServiceExecutionRequestedConsumer consumer = new ServiceExecutionRequestedConsumer(channel,acquisitionManager,rabbitTemplate);
 
@@ -268,7 +275,7 @@ public class RabbitManager {
     private void registerActuatorExecutionRequestedConsumer() throws IOException {
 
         Channel channel = connection.createChannel();
-        channel.queueDeclare(actuatorExecutionQueueName, false,true,true,null);
+        channel.queueDeclare(actuatorExecutionQueueName, false,true,true,queueArgs);
         channel.queueBind(actuatorExecutionQueueName, enablerPlatformProxyExchangeName, executeActuatorRoutingKey);
         ActuatorExecutionRequestedConsumer consumer = new ActuatorExecutionRequestedConsumer(channel,acquisitionManager,rabbitTemplate);
 
